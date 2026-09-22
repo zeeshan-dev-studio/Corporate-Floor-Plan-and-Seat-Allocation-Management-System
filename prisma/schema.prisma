@@ -1,0 +1,162 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Building {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  campus    String
+  floors    Floor[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Floor {
+  id          String         @id @default(uuid())
+  buildingId  String
+  name        String
+  floorNumber Int
+  totalArea   Float          @default(35000.0)
+  width       Float          @default(2600.0)
+  height      Float          @default(1600.0)
+  scale       Float          @default(1.0)
+  gridSize    Int            @default(20)
+  building    Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  zones       Zone[]
+  objects     FloorObject[]
+  seats       Seat[]
+  versions    FloorVersion[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Zone {
+  id        String   @id @default(uuid())
+  floorId   String
+  code      String
+  name      String
+  color     String   @default("#3b82f6")
+  polygon   String?  // JSON coordinate points of zone boundary
+  floor     Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  seats     Seat[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([floorId, code])
+}
+
+model FloorObject {
+  id          String   @id @default(uuid())
+  floorId     String
+  type        String   // wall, glass, door, room, bay, furniture, facility, it, safety, dimension
+  subType     String?  // yBay, linearBench, boardroom, theater, singleDoor, etc.
+  layer       String   // architecture, walls, doors, glass, rooms, workstations, furniture, facilities, it, safety, dimensions
+  x           Float
+  y           Float
+  width       Float
+  height      Float
+  rotation    Float    @default(0.0)
+  geometry    String   // JSON structured geometry (segments, svg paths, components)
+  properties  String   // JSON properties (label, roomType, capacity, color, etc.)
+  locked      Boolean  @default(false)
+  hidden      Boolean  @default(false)
+  floor       Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  seats       Seat[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Program {
+  id               String           @id @default(uuid())
+  name             String           @unique
+  code             String           @unique
+  color            String           @default("#3b82f6")
+  requiredCapacity Int              @default(100)
+  contactPerson    String?
+  notes            String?
+  allocations      SeatAllocation[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model Seat {
+  id            String           @id @default(uuid())
+  seatId        String           @unique // e.g. CHN-F03-A-041
+  floorId       String
+  zoneId        String?
+  floorObjectId String?
+  bayCode       String?          // e.g. Y-BAY-07
+  seatType      String           @default("standard") // standard, hot_desk, team_lead, ops_manager, accessible
+  x             Float
+  y             Float
+  rotation      Float            @default(0.0)
+  floor         Floor            @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  zone          Zone?            @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  floorObject   FloorObject?     @relation(fields: [floorObjectId], references: [id], onDelete: SetNull)
+  allocations   SeatAllocation[]
+  blocks        SeatBlock[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model SeatAllocation {
+  id            String    @id @default(uuid())
+  seatId        String
+  programId     String
+  status        String    @default("ALLOCATED") // ALLOCATED, RESERVED, TEMPORARY
+  shift         String?   @default("09:00 - 18:00")
+  employeeName  String?
+  employeeId    String?
+  effectiveDate DateTime  @default(now())
+  endDate       DateTime?
+  notes         String?
+  seat          Seat      @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  program       Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model SeatBlock {
+  id        String    @id @default(uuid())
+  seatId    String
+  reason    String    // Maintenance, IT issue, Cleaning, Reserved, Temporary closure, Construction, Other
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  notes     String?
+  active    Boolean   @default(true)
+  seat      Seat      @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String   // ASSIGN_PROGRAM, REMOVE_ALLOCATION, BLOCK_SEAT, UNBLOCK_SEAT, CREATE_OBJECT, etc.
+  entityType String   // SEAT, FLOOR_OBJECT, PROGRAM, FLOOR_VERSION, IMPORT
+  entityId   String?
+  seatId     String?
+  user       String   @default("Facility Planner")
+  userRole   String   @default("Administrator")
+  prevValue  String?  // JSON
+  newValue   String?  // JSON
+  reason     String?
+  source     String   @default("WEB_UI") // WEB_UI, EXCEL_IMPORT, BULK_ACTION, EDITOR
+  timestamp  DateTime @default(now())
+}
+
+model FloorVersion {
+  id           String   @id @default(uuid())
+  floorId      String
+  versionName  String
+  description  String?
+  snapshotJson String   // Full floor snapshot
+  createdBy    String   @default("Facility Planner")
+  createdAt    DateTime @default(now())
+  floor        Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+}

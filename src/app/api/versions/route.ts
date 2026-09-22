@@ -1,0 +1,223 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const floorId = searchParams.get('floorId');
+
+    if (!floorId) {
+      return NextResponse.json({ success: false, error: 'floorId required' }, { status: 400 });
+    }
+
+    const versions = await prisma.floorVersion.findMany({
+      where: { floorId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        floorId: true,
+        versionName: true,
+        description: true,
+        createdBy: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, versions });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { action, floorId, versionName, description, versionId, user = 'Facility Planner' } = body;
+
+    if (action === 'CREATE') {
+      if (!floorId || !versionName) {
+        return NextResponse.json(
+          { success: false, error: 'floorId and versionName required' },
+          { status: 400 }
+        );
+      }
+
+      // Gather current state of floor, objects, seats, allocations, blocks
+      const [floor, objects, seats] = await Promise.all([
+        prisma.floor.findUnique({ where: { id: floorId } }),
+        prisma.floorObject.findMany({ where: { floorId } }),
+        prisma.seat.findMany({
+          where: { floorId },
+          include: {
+            allocations: true,
+            blocks: true,
+          },
+        }),
+      ]);
+
+      const snapshot = {
+        floor,
+        objects,
+        seats,
+        snapshotDate: new Date().toISOString(),
+      };
+
+      const newVersion = await prisma.floorVersion.create({
+        data: {
+          floorId,
+          versionName,
+          description: description || null,
+          snapshotJson: JSON.stringify(snapshot),
+          createdBy: user,
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'CREATE_FLOOR_VERSION',
+          entityType: 'FLOOR_VERSION',
+          entityId: newVersion.id,
+          user,
+          newValue: JSON.stringify({ versionName, seatsCount: seats.length }),
+          reason: description || 'Snapshot saved',
+          source: 'VERSION_MANAGER',
+        },
+      });
+
+      return NextResponse.json({ success: true, version: newVersion });
+    }
+
+    if (action === 'RESTORE' && versionId) {
+      const version = await prisma.floorVersion.findUnique({
+        where: { id: versionId },
+      });
+
+      if (!version) {
+        return NextResponse.json({ success: false, error: 'Version not found' }, { status: 404 });
+      }
+
+      const snapshot = JSON.parse(version.snapshotJson);
+
+      await prisma.$transaction(async (tx) => {
+        // Clear current objects, seats, allocations, blocks for this floor
+        await tx.seatBlock.deleteMany({
+          where: { seat: { floorId: version.floorId } },
+        });
+        await tx.seatAllocation.deleteMany({
+          where: { seat: { floorId: version.floorId } },
+        });
+        await tx.seat.deleteMany({
+          where: { floorId: version.floorId },
+        });
+        await tx.floorObject.deleteMany({
+          where: { floorId: version.floorId },
+        });
+
+        // Recreate objects
+        if (snapshot.objects && snapshot.objects.length > 0) {
+          for (const obj of snapshot.objects) {
+            await tx.floorObject.create({
+              data: {
+                id: obj.id,
+                floorId: obj.floorId,
+                type: obj.type,
+                subType: obj.subType,
+                layer: obj.layer,
+                x: obj.x,
+                y: obj.y,
+                width: obj.width,
+                height: obj.height,
+                rotation: obj.rotation || 0,
+                geometry: obj.geometry,
+                properties: obj.properties,
+                locked: obj.locked || false,
+                hidden: obj.hidden || false,
+              },
+            });
+          }
+        }
+
+        // Recreate seats, allocations, and blocks
+        if (snapshot.seats && snapshot.seats.length > 0) {
+          for (const s of snapshot.seats) {
+            const seat = await tx.seat.create({
+              data: {
+                id: s.id,
+                seatId: s.seatId,
+                floorId: s.floorId,
+                zoneId: s.zoneId,
+                floorObjectId: s.floorObjectId,
+                bayCode: s.bayCode,
+                seatType: s.seatType,
+                x: s.x,
+                y: s.y,
+                rotation: s.rotation || 0,
+              },
+            });
+
+            if (s.allocations && s.allocations.length > 0) {
+              for (const a of s.allocations) {
+                await tx.seatAllocation.create({
+                  data: {
+                    id: a.id,
+                    seatId: seat.id,
+                    programId: a.programId,
+                    status: a.status,
+                    shift: a.shift,
+                    employeeName: a.employeeName,
+                    employeeId: a.employeeId,
+                    effectiveDate: new Date(a.effectiveDate),
+                    endDate: a.endDate ? new Date(a.endDate) : null,
+                  },
+                });
+              }
+            }
+
+            if (s.blocks && s.blocks.length > 0) {
+              for (const b of s.blocks) {
+                await tx.seatBlock.create({
+                  data: {
+                    id: b.id,
+                    seatId: seat.id,
+                    reason: b.reason,
+                    startDate: new Date(b.startDate),
+                    endDate: b.endDate ? new Date(b.endDate) : null,
+                    notes: b.notes,
+                    active: b.active,
+                  },
+                });
+              }
+            }
+          }
+        }
+
+        await tx.auditLog.create({
+          data: {
+            action: 'RESTORE_FLOOR_VERSION',
+            entityType: 'FLOOR_VERSION',
+            entityId: version.id,
+            user,
+            newValue: JSON.stringify({ restoredVersion: version.versionName }),
+            reason: `Restored to version ${version.versionName}`,
+            source: 'VERSION_MANAGER',
+          },
+        });
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully restored floor to ${version.versionName}`,
+      });
+    }
+
+    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Failed version action:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Operation failed' },
+      { status: 500 }
+    );
+  }
+}
