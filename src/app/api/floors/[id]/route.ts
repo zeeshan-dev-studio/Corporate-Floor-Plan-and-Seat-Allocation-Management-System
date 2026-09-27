@@ -21,9 +21,18 @@ export async function GET(
       include: {
         building: true,
         zones: true,
+        // Metadata only: snapshotJson holds a full copy of the floor
         versions: {
           orderBy: { createdAt: 'desc' },
           take: 10,
+          select: {
+            id: true,
+            floorId: true,
+            versionName: true,
+            description: true,
+            createdBy: true,
+            createdAt: true,
+          },
         },
       },
     });

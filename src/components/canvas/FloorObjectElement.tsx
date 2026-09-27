@@ -13,7 +13,7 @@ export const FloorObjectElement: React.FC<FloorObjectElementProps> = React.memo(
   ({ object, isSelected, isHovered, onSelect, onHover }) => {
     if (object.hidden) return null;
 
-    const { x, y, width, height, rotation, type, subType, properties } = object;
+    const { x, y, width, height, rotation, type, subType, geometry, properties } = object;
     const label = properties?.label || '';
     const roomType = properties?.roomType || '';
 
@@ -88,15 +88,17 @@ export const FloorObjectElement: React.FC<FloorObjectElementProps> = React.memo(
         {/* 2. WALLS */}
         {type === 'wall' && (
           <g>
+            {/* Walls with fill "none" (the building envelope) are outlines: a solid fill
+                would hide the rooms inside and catch every click on the floor */}
             <rect
               width={width}
               height={height}
-              fill="#1e293b"
-              stroke={isSelected ? '#38bdf8' : '#475569'}
-              strokeWidth={2}
+              fill={geometry?.fill ?? '#1e293b'}
+              stroke={isSelected ? '#38bdf8' : geometry?.stroke ?? '#475569'}
+              strokeWidth={geometry?.strokeWidth ?? 2}
             />
             {/* Architectural cross hatching if thick wall */}
-            {width > 20 && height > 20 && (
+            {geometry?.fill !== 'none' && width > 20 && height > 20 && (
               <line
                 x1={0}
                 y1={0}

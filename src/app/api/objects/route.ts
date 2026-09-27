@@ -4,7 +4,15 @@ import { prisma } from '@/lib/prisma';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, object, objects, floorId, user = 'Facility Planner', userRole = 'Administrator' } = body;
+    const {
+      action,
+      object,
+      objects,
+      deletedObjectIds,
+      floorId,
+      user = 'Facility Planner',
+      userRole = 'Administrator',
+    } = body;
 
     if (action === 'CREATE' && object) {
       const created = await prisma.floorObject.create({
@@ -82,41 +90,43 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'BATCH_SAVE' && Array.isArray(objects) && floorId) {
-      // Upsert/update objects in bulk
+      const idsToDelete: string[] = Array.isArray(deletedObjectIds) ? deletedObjectIds : [];
+      const created: { tempId: string; id: string }[] = [];
+      let deletedCount = 0;
+
       await prisma.$transaction(async (tx) => {
+        // Objects removed in the editor since the last save (scoped to this floor)
+        if (idsToDelete.length > 0) {
+          const result = await tx.floorObject.deleteMany({
+            where: { floorId, id: { in: idsToDelete } },
+          });
+          deletedCount = result.count;
+        }
+
         for (const obj of objects) {
+          const data = {
+            x: obj.x,
+            y: obj.y,
+            width: obj.width,
+            height: obj.height,
+            rotation: obj.rotation || 0,
+            geometry: JSON.stringify(obj.geometry || {}),
+            properties: JSON.stringify(obj.properties || {}),
+            locked: obj.locked || false,
+            hidden: obj.hidden || false,
+          };
+          const identity = { floorId, type: obj.type, subType: obj.subType, layer: obj.layer };
+
           if (obj.id.startsWith('temp-')) {
-            await tx.floorObject.create({
-              data: {
-                floorId,
-                type: obj.type,
-                subType: obj.subType,
-                layer: obj.layer,
-                x: obj.x,
-                y: obj.y,
-                width: obj.width,
-                height: obj.height,
-                rotation: obj.rotation || 0,
-                geometry: JSON.stringify(obj.geometry || {}),
-                properties: JSON.stringify(obj.properties || {}),
-                locked: obj.locked || false,
-                hidden: obj.hidden || false,
-              },
-            });
+            const row = await tx.floorObject.create({ data: { ...identity, ...data } });
+            // The editor swaps its temporary id for this one, so the next save won't create it again
+            created.push({ tempId: obj.id, id: row.id });
           } else {
-            await tx.floorObject.update({
+            // Upsert: an object deleted by an earlier save and then brought back with undo is re-created
+            await tx.floorObject.upsert({
               where: { id: obj.id },
-              data: {
-                x: obj.x,
-                y: obj.y,
-                width: obj.width,
-                height: obj.height,
-                rotation: obj.rotation || 0,
-                geometry: JSON.stringify(obj.geometry || {}),
-                properties: JSON.stringify(obj.properties || {}),
-                locked: obj.locked || false,
-                hidden: obj.hidden || false,
-              },
+              update: data,
+              create: { id: obj.id, ...identity, ...data },
             });
           }
         }
@@ -128,14 +138,23 @@ export async function POST(req: NextRequest) {
             entityId: floorId,
             user,
             userRole,
-            newValue: JSON.stringify({ objectCount: objects.length }),
+            newValue: JSON.stringify({
+              objectCount: objects.length,
+              created: created.length,
+              deleted: deletedCount,
+            }),
             reason: 'Floor layout saved',
             source: 'EDITOR',
           },
         });
       });
 
-      return NextResponse.json({ success: true, count: objects.length });
+      return NextResponse.json({
+        success: true,
+        count: objects.length,
+        created,
+        deleted: deletedCount,
+      });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });

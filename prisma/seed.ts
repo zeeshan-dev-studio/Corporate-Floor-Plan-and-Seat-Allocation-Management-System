@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { captureFloorSnapshot } from '../src/lib/floorSnapshot';
 
 const prisma = new PrismaClient();
 
@@ -1218,11 +1219,8 @@ async function main() {
       floorId: floor.id,
       versionName: 'v1.0 - Q3 Baseline Layout',
       description: 'Initial operational layout with Amazon, McAfee, T-Mobile, Wayfair & Healthcare allocations',
-      snapshotJson: JSON.stringify({
-        timestamp: new Date().toISOString(),
-        totalSeats: seatCountA + seatCountB + seatCountC,
-        notes: 'Pre-expansion snapshot',
-      }),
+      // A full snapshot, so restoring the baseline actually rebuilds this layout
+      snapshotJson: JSON.stringify(await captureFloorSnapshot(prisma, floor.id)),
       createdBy: 'Administrator',
     },
   });

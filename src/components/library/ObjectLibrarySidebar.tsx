@@ -299,7 +299,7 @@ export const ObjectLibrarySidebar: React.FC = () => {
     const centerY = Math.round((-panY + 350) / zoom / 20) * 20;
 
     const newObj: FloorObjectDTO = {
-      id: `temp-${Date.now()}`,
+      id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       floorId: floor.id,
       type: item.type,
       subType: item.subType,

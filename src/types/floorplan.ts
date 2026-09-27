@@ -77,6 +77,9 @@ export interface GeometryData {
   points?: Point[];
   path?: string;
   shape?: 'rect' | 'circle' | 'polygon' | 'path' | 'line';
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
   components?: Array<{
     type: string;
     x: number;

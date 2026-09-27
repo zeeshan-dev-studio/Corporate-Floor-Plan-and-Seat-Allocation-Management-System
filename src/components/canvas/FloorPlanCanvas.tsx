@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { useFloorPlanStore } from '@/store/useFloorPlanStore';
+import { useFloorPlanStore, isDialogOpen } from '@/store/useFloorPlanStore';
 import { SeatElement } from './SeatElement';
 import { FloorObjectElement } from './FloorObjectElement';
 import { Rulers } from './Rulers';
@@ -55,6 +55,7 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
     deleteSelectedObjects,
     selectAllSeats,
     pushHistory,
+    closeDialogs,
   } = useFloorPlanStore();
 
   const [isPanning, setIsPanning] = useState(false);
@@ -66,6 +67,8 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
   const [draggingObjectId, setDraggingObjectId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 1200, height: 800 });
+  // True between the mouseup that finishes a selection box and the next mousedown
+  const marqueeEndedRef = useRef(false);
 
   // Update container size on resize
   useEffect(() => {
@@ -85,6 +88,13 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // An open dialog owns the keyboard: Esc closes it, and canvas shortcuts must not
+      // change the selection or layout the dialog is acting on
+      if (isDialogOpen(useFloorPlanStore.getState())) {
+        if (e.key === 'Escape') closeDialogs();
+        return;
+      }
+
       // Don't trigger if typing in an input
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) {
         return;
@@ -132,7 +142,7 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [undo, redo, deleteSelectedObjects, clearSelection, selectAllSeats, setZoom, activeRole]);
+  }, [undo, redo, deleteSelectedObjects, clearSelection, selectAllSeats, setZoom, activeRole, closeDialogs]);
 
   // Convert screen coordinates to floor coordinate system
   const screenToFloorCoords = useCallback(
@@ -183,16 +193,17 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
 
     if (e.button === 0) {
       const { x, y } = screenToFloorCoords(e.clientX, e.clientY);
+      marqueeEndedRef.current = false;
 
       // Check if user clicked an object handle or empty area
       const clickedTarget = e.target as SVGElement;
       const isFloorBackground =
-        clickedTarget.id === 'cad-canvas-bg' ||
-        clickedTarget.id === 'cad-main-svg' ||
-        clickedTarget.tagName === 'svg';
+        clickedTarget.id === 'cad-canvas-bg' || clickedTarget === svgRef.current;
+      // Rooms contain desks, so dragging inside one selects seats (a plain click still selects the room)
+      const isInsideRoom = !!clickedTarget.closest('#layer-rooms');
 
-      if (isFloorBackground) {
-        if (!e.shiftKey && !e.ctrlKey) {
+      if (isFloorBackground || isInsideRoom) {
+        if (isFloorBackground && !e.shiftKey && !e.ctrlKey) {
           clearSelection();
         }
         // Start marquee box selection
@@ -245,6 +256,7 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
       setIsSelectingBox(false);
       if (Math.abs(marqueeBox.width) > 5 && Math.abs(marqueeBox.height) > 5) {
         selectSeatsInBox(marqueeBox);
+        marqueeEndedRef.current = true;
       }
       setMarqueeBox(null);
     }
@@ -366,7 +378,10 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
                     object={obj}
                     isSelected={selectedObjectIds.includes(obj.id)}
                     isHovered={hoverObjectId === obj.id}
-                    onSelect={(id, multi) => selectObject(id, multi)}
+                    onSelect={(id, multi) => {
+                      // A selection box dragged inside the room ends with a click on it; keep the box's seats
+                      if (!marqueeEndedRef.current) selectObject(id, multi);
+                    }}
                     onHover={(id) => setHoverObject(id)}
                   />
                 ))}

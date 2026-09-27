@@ -57,7 +57,7 @@ export const VersionSnapshotModal: React.FC = () => {
   const handleRestore = async (versionId: string, name: string) => {
     if (
       !confirm(
-        `Are you sure you want to restore the floor plan to "${name}"? This will overwrite the current active layout and allocations.`
+        `Are you sure you want to restore the floor plan to "${name}"? This will overwrite the current active layout and allocations. The current state is saved as an automatic backup first.`
       )
     ) {
       return;

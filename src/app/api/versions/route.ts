@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { captureFloorSnapshot, readRestorableSnapshot } from '@/lib/floorSnapshot';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,24 +46,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Gather current state of floor, objects, seats, allocations, blocks
-      const [floor, objects, seats] = await Promise.all([
-        prisma.floor.findUnique({ where: { id: floorId } }),
-        prisma.floorObject.findMany({ where: { floorId } }),
-        prisma.seat.findMany({
-          where: { floorId },
-          include: {
-            allocations: true,
-            blocks: true,
-          },
-        }),
-      ]);
-
-      const snapshot = {
-        floor,
-        objects,
-        seats,
-        snapshotDate: new Date().toISOString(),
-      };
+      const snapshot = await captureFloorSnapshot(prisma, floorId);
+      if (!snapshot.floor) {
+        return NextResponse.json({ success: false, error: 'Floor not found' }, { status: 404 });
+      }
 
       const newVersion = await prisma.floorVersion.create({
         data: {
@@ -80,7 +67,7 @@ export async function POST(req: NextRequest) {
           entityType: 'FLOOR_VERSION',
           entityId: newVersion.id,
           user,
-          newValue: JSON.stringify({ versionName, seatsCount: seats.length }),
+          newValue: JSON.stringify({ versionName, seatsCount: snapshot.seats.length }),
           reason: description || 'Snapshot saved',
           source: 'VERSION_MANAGER',
         },
@@ -98,9 +85,32 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Version not found' }, { status: 404 });
       }
 
-      const snapshot = JSON.parse(version.snapshotJson);
+      // Restoring starts by deleting the current floor, so refuse snapshots that can't rebuild it
+      const snapshot = readRestorableSnapshot(version.snapshotJson);
+      if (!snapshot) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `"${version.versionName}" has no saved layout data, so it can't be restored. Nothing was changed.`,
+          },
+          { status: 422 }
+        );
+      }
+
+      const backupName = 'Auto-backup before restore';
 
       await prisma.$transaction(async (tx) => {
+        // Keep the current state as a snapshot so this restore can be undone
+        await tx.floorVersion.create({
+          data: {
+            floorId: version.floorId,
+            versionName: backupName,
+            description: `Saved automatically before restoring "${version.versionName}"`,
+            snapshotJson: JSON.stringify(await captureFloorSnapshot(tx, version.floorId)),
+            createdBy: user,
+          },
+        });
+
         // Clear current objects, seats, allocations, blocks for this floor
         await tx.seatBlock.deleteMany({
           where: { seat: { floorId: version.floorId } },
@@ -170,6 +180,7 @@ export async function POST(req: NextRequest) {
                     employeeId: a.employeeId,
                     effectiveDate: new Date(a.effectiveDate),
                     endDate: a.endDate ? new Date(a.endDate) : null,
+                    notes: a.notes,
                   },
                 });
               }
@@ -208,7 +219,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Successfully restored floor to ${version.versionName}`,
+        message: `Restored "${version.versionName}". The previous state was saved as the snapshot "${backupName}".`,
       });
     }
 

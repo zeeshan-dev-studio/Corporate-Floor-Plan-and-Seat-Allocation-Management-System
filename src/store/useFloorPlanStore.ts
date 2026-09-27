@@ -50,6 +50,8 @@ export interface FloorPlanStore {
   zones: ZoneDTO[];
   programs: ProgramDTO[];
   objects: FloorObjectDTO[];
+  // Object ids as last loaded from / saved to the database; Save deletes any no longer in `objects`
+  persistedObjectIds: string[];
   seats: SeatDTO[];
   versions: FloorVersionDTO[];
   auditLogs: AuditLogDTO[];
@@ -150,6 +152,7 @@ export interface FloorPlanStore {
   setVersionModalOpen: (open: boolean) => void;
   setAuditModalOpen: (open: boolean) => void;
   setAnalyticsDrawerOpen: (open: boolean) => void;
+  closeDialogs: () => void;
 
   // Network Actions
   loadFloorData: (floorId: string, asOfDate?: string) => Promise<void>;
@@ -161,12 +164,23 @@ export interface FloorPlanStore {
   bulkChangeZone: (zoneId: string) => Promise<boolean>;
 }
 
+// Modal dialogs, which own the keyboard while open (the capacity drawer is not one of them)
+export const isDialogOpen = (s: FloorPlanStore) =>
+  s.isBulkAssignOpen ||
+  s.isBulkBlockOpen ||
+  s.isBulkUnallocateOpen ||
+  s.isExcelImportOpen ||
+  s.isExportModalOpen ||
+  s.isVersionModalOpen ||
+  s.isAuditModalOpen;
+
 export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
   building: null,
   floor: null,
   zones: [],
   programs: [],
   objects: [],
+  persistedObjectIds: [],
   seats: [],
   versions: [],
   auditLogs: [],
@@ -315,7 +329,16 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
 
   selectObjects: (selectedObjectIds) => set({ selectedObjectIds, selectedSeatIds: [] }),
 
-  clearSelection: () => set({ selectedSeatIds: [], selectedObjectIds: [], marqueeBox: null }),
+  clearSelection: () =>
+    set({
+      selectedSeatIds: [],
+      selectedObjectIds: [],
+      marqueeBox: null,
+      // These dialogs act on the selected seats, so they close with the selection
+      isBulkAssignOpen: false,
+      isBulkBlockOpen: false,
+      isBulkUnallocateOpen: false,
+    }),
 
   setMarqueeBox: (marqueeBox) => set({ marqueeBox }),
 
@@ -445,6 +468,16 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
   setVersionModalOpen: (isVersionModalOpen) => set({ isVersionModalOpen }),
   setAuditModalOpen: (isAuditModalOpen) => set({ isAuditModalOpen }),
   setAnalyticsDrawerOpen: (isAnalyticsDrawerOpen) => set({ isAnalyticsDrawerOpen }),
+  closeDialogs: () =>
+    set({
+      isBulkAssignOpen: false,
+      isBulkBlockOpen: false,
+      isBulkUnallocateOpen: false,
+      isExcelImportOpen: false,
+      isExportModalOpen: false,
+      isVersionModalOpen: false,
+      isAuditModalOpen: false,
+    }),
 
   loadFloorData: async (floorId, asOfDateStr) => {
     try {
@@ -459,6 +492,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
           zones: data.zones,
           programs: data.programs,
           objects: data.objects,
+          persistedObjectIds: data.objects.map((o: FloorObjectDTO) => o.id),
           seats: data.seats,
           versions: data.versions,
           isLoading: false,
@@ -474,8 +508,11 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
   },
 
   saveFloorLayout: async () => {
-    const { floor, objects, activeRole } = get();
+    const { floor, objects, persistedObjectIds, activeRole } = get();
     if (!floor) return;
+    // Saved objects that are no longer on the plan: deleted, or an add that was undone
+    const currentIds = new Set(objects.map((o) => o.id));
+    const deletedObjectIds = persistedObjectIds.filter((id) => !currentIds.has(id));
     try {
       set({ isSaving: true });
       const res = await fetch('/api/objects', {
@@ -485,18 +522,38 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
           action: 'BATCH_SAVE',
           floorId: floor.id,
           objects,
+          deletedObjectIds,
           user: 'Facility Planner',
           userRole: activeRole,
         }),
       });
       const data = await res.json();
-      set({ isSaving: false });
-      if (data.success) {
-        alert('Floor plan layout saved successfully!');
+      if (!data.success) {
+        set({ isSaving: false });
+        alert(data.error || 'Failed to save the floor layout.');
+        return;
       }
+
+      // Swap temporary ids for database ids everywhere, undo history included,
+      // so the next save updates these objects instead of creating them again
+      const idMap = new Map<string, string>(
+        (data.created || []).map((c: { tempId: string; id: string }): [string, string] => [c.tempId, c.id])
+      );
+      const remap = (list: FloorObjectDTO[]) =>
+        list.map((o) => (idMap.has(o.id) ? { ...o, id: idMap.get(o.id)! } : o));
+      set((state) => ({
+        isSaving: false,
+        objects: remap(state.objects),
+        past: state.past.map((h) => ({ ...h, objects: remap(h.objects) })),
+        future: state.future.map((h) => ({ ...h, objects: remap(h.objects) })),
+        selectedObjectIds: state.selectedObjectIds.map((id) => idMap.get(id) ?? id),
+        persistedObjectIds: objects.map((o) => idMap.get(o.id) ?? o.id),
+      }));
+      alert('Floor plan layout saved successfully!');
     } catch (e) {
       console.error(e);
       set({ isSaving: false });
+      alert('Failed to save the floor layout.');
     }
   },
 

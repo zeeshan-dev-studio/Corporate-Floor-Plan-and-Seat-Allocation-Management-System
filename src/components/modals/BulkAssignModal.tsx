@@ -14,9 +14,7 @@ export const BulkAssignModal: React.FC = () => {
     bulkAssignProgram,
   } = useFloorPlanStore();
 
-  const [selectedProgramId, setSelectedProgramId] = useState<string>(
-    programs[0]?.id || ''
-  );
+  const [selectedProgramId, setSelectedProgramId] = useState<string>('');
   const [effectiveDate, setEffectiveDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
@@ -25,8 +23,14 @@ export const BulkAssignModal: React.FC = () => {
 
   if (!isBulkAssignOpen || selectedSeatIds.length === 0) return null;
 
+  // Until the user picks a program, use the first one (the dropdown already shows it).
+  // This can't be the initial state: the dialog mounts before programs have loaded.
+  const programId = programs.some((p) => p.id === selectedProgramId)
+    ? selectedProgramId
+    : programs[0]?.id ?? '';
+
   const selectedSeatsList = seats.filter((s) => selectedSeatIds.includes(s.id));
-  const selectedProgram = programs.find((p) => p.id === selectedProgramId);
+  const selectedProgram = programs.find((p) => p.id === programId);
 
   // Breakdown of currently selected seats
   const currentAllocationCounts: Record<string, number> = {};
@@ -37,14 +41,14 @@ export const BulkAssignModal: React.FC = () => {
 
   // Calculate overwrite count
   const overwriteCount = selectedSeatsList.filter(
-    (s) => s.programId && s.programId !== selectedProgramId
+    (s) => s.programId && s.programId !== programId
   ).length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProgramId) return;
+    if (!programId) return;
     setIsSubmitting(true);
-    await bulkAssignProgram(selectedProgramId, effectiveDate, shift);
+    await bulkAssignProgram(programId, effectiveDate, shift);
     setIsSubmitting(false);
   };
 
@@ -80,7 +84,7 @@ export const BulkAssignModal: React.FC = () => {
               Select Business Program
             </label>
             <select
-              value={selectedProgramId}
+              value={programId}
               onChange={(e) => setSelectedProgramId(e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 font-medium"
               required
@@ -167,7 +171,7 @@ export const BulkAssignModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !programId}
               className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-lg shadow-lg shadow-sky-600/20 transition-colors disabled:opacity-50"
             >
               {isSubmitting ? 'Allocating...' : `Confirm Allocation (${selectedSeatIds.length} Seats)`}
