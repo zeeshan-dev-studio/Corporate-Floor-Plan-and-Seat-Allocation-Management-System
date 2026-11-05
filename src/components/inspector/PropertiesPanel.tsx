@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFloorPlanStore } from '@/store/useFloorPlanStore';
 import {
   Info,
@@ -17,6 +17,31 @@ import {
   Sliders,
   Calendar,
 } from 'lucide-react';
+
+/** Number input that keeps what you type (blank, "-", decimals) and commits once on blur or Enter: one undo step, no forced 0. */
+const NumberField: React.FC<{ value: number; min?: number; disabled?: boolean; onCommit: (n: number) => void }> = ({ value, min, disabled, onCommit }) => {
+  const [text, setText] = useState(String(value));
+  useEffect(() => setText(String(value)), [value]);
+  const commit = () => {
+    const n = parseFloat(text);
+    if (Number.isFinite(n) && (min === undefined || n >= min)) {
+      if (n !== value) onCommit(n);
+    } else {
+      setText(String(value));
+    }
+  };
+  return (
+    <input
+      type="number"
+      value={text}
+      disabled={disabled}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white"
+    />
+  );
+};
 
 export const PropertiesPanel: React.FC = () => {
   const {
@@ -256,7 +281,7 @@ export const PropertiesPanel: React.FC = () => {
             </div>
             <div className="space-y-1.5">
               {Object.entries(breakdown).map(([name, count]) => (
-                <div key={name} className="flex justify-between items-center py-1 border-b border-slate-850">
+                <div key={name} className="flex justify-between items-center py-1 border-b border-slate-800">
                   <span className="text-slate-300 font-medium">{name}</span>
                   <span className="font-mono font-bold text-white bg-slate-800 px-2 py-0.5 rounded">
                     {count}
@@ -341,43 +366,19 @@ export const PropertiesPanel: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-slate-500 block mb-0.5">X Position</label>
-                  <input
-                    type="number"
-                    value={obj.x}
-                    disabled={!canManageFacilities || obj.locked}
-                    onChange={(e) => updateObject({ ...obj, x: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white"
-                  />
+                  <NumberField value={obj.x} disabled={!canManageFacilities || obj.locked} onCommit={(n) => updateObject({ ...obj, x: n })} />
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-500 block mb-0.5">Y Position</label>
-                  <input
-                    type="number"
-                    value={obj.y}
-                    disabled={!canManageFacilities || obj.locked}
-                    onChange={(e) => updateObject({ ...obj, y: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white"
-                  />
+                  <NumberField value={obj.y} disabled={!canManageFacilities || obj.locked} onCommit={(n) => updateObject({ ...obj, y: n })} />
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-500 block mb-0.5">Width</label>
-                  <input
-                    type="number"
-                    value={obj.width}
-                    disabled={!canManageFacilities || obj.locked}
-                    onChange={(e) => updateObject({ ...obj, width: parseFloat(e.target.value) || 10 })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white"
-                  />
+                  <NumberField value={obj.width} min={1} disabled={!canManageFacilities || obj.locked} onCommit={(n) => updateObject({ ...obj, width: n })} />
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-500 block mb-0.5">Height</label>
-                  <input
-                    type="number"
-                    value={obj.height}
-                    disabled={!canManageFacilities || obj.locked}
-                    onChange={(e) => updateObject({ ...obj, height: parseFloat(e.target.value) || 10 })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white"
-                  />
+                  <NumberField value={obj.height} min={1} disabled={!canManageFacilities || obj.locked} onCommit={(n) => updateObject({ ...obj, height: n })} />
                 </div>
               </div>
             </div>
@@ -425,7 +426,7 @@ export const PropertiesPanel: React.FC = () => {
 
   // 4. Default / Floor Summary
   const totalSeats = seats.length;
-  const allocatedSeats = seats.filter((s) => s.programId).length;
+  const allocatedSeats = seats.filter((s) => s.programId && !s.isBlocked).length;
   const blockedSeats = seats.filter((s) => s.isBlocked).length;
   const vacantSeats = seats.filter((s) => !s.programId && !s.isBlocked).length;
 

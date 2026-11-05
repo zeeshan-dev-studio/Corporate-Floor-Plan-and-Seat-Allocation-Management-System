@@ -61,12 +61,12 @@ The role dropdown is the only access control, and it lives in the browser. Every
 
 ## P1 — Important bugs
 
-### 9. PNG and PDF exports are a tiny crop of the screen — Verified
+### 9. PNG and PDF exports are a tiny crop of the screen — Fixed
 The canvas `<svg>` has no `width`, `height` or `viewBox`, so the serialized image loads at the browser default of 300x150. The "high-res" PNG comes out at 600x300 and shows only the top-left corner of the current view, and the PDF embeds the same crop. SVG export keeps the current pan/zoom, so it also shows only what is on screen. The dialog's Operational/Architectural choice is ignored (exports always match the on-screen mode), and selection and hover rings are included.
 - Where: [pdf.ts:52-61](src/lib/export/pdf.ts#L52), [:93-103](src/lib/export/pdf.ts#L93), [:318-352](src/lib/export/pdf.ts#L318), [FloorPlanCanvas.tsx:305-310](src/components/canvas/FloorPlanCanvas.tsx#L305)
 - Fix: build a dedicated export SVG: clone it, drop the pan/zoom transform, set `viewBox`/`width`/`height` to the floor size, strip selection UI, and render in the chosen mode.
 
-### 10. The importer can't read the app's own Excel export — Verified
+### 10. The importer can't read the app's own Excel export — Fixed
 Rows with Program "Unallocated" (every vacant seat in an export) fail as "Unknown Program". The export's "Employee Name" column is ignored because the importer only knows "Employee", so names are dropped. Also:
 - A row with a Seat ID but a *blank* Program de-allocates that seat on commit. The preview shows only 8 rows, so this is easy to miss, and it's inconsistent with rejecting an explicit "Unallocated".
 - Header cells are read with `eachCell` (which skips empty cells) but looked up by column number, so one blank header shifts every later column.
@@ -75,24 +75,24 @@ Rows with Program "Unallocated" (every vacant seat in an export) fail as "Unknow
 - Where: [import/excel/route.ts:41-65](src/app/api/import/excel/route.ts#L41), [:109-141](src/app/api/import/excel/route.ts#L109), [ExcelImportModal.tsx:56-66](src/components/modals/ExcelImportModal.tsx#L56), [:164](src/components/modals/ExcelImportModal.tsx#L164), [excel.ts:49-64](src/lib/export/excel.ts#L49)
 - Fix: treat "Unallocated" and blank the same way, explicitly; accept both header names; map headers by column number; re-validate on commit; accept only `.xlsx`.
 
-### 11. Excel export has wrong or missing data
+### 11. Excel export has wrong or missing data — Fixed
 - The Zone column is guessed from the bay code, so every Y-bay seat shows "Zone BAY".
 - The "Allocation History" sheet is always empty, because the store's `auditLogs` is never filled.
 - Area, surplus and utilization are written as text, so they can't be summed or sorted.
 - Where: [excel.ts:75](src/lib/export/excel.ts#L75), [:135-136](src/lib/export/excel.ts#L135), [:176](src/lib/export/excel.ts#L176), [useFloorPlanStore.ts:186](src/store/useFloorPlanStore.ts#L186), [ExportModal.tsx:56](src/components/modals/ExportModal.tsx#L56)
 - Fix: map `zoneId` to the zone name; fetch `/api/audit-logs` at export time; write numbers as numbers with number formats.
 
-### 12. Utilization counts blocked seats as used — Verified
+### 12. Utilization counts blocked seats as used — Fixed
 Utilization is computed as allocated seats (including 21 that are allocated but blocked) divided by (total - blocked), which gives 478/506 = 94%. Counting only usable allocated seats gives 457/506 = 90%, and the current formula can exceed 100%. The dashboard's stacked bar adds 478 + 26 + 49 = 553 of 532 seats, so it overflows, and with zero seats it divides by zero.
 - Where: [floors/[id]/route.ts:208-214](src/app/api/floors/%5Bid%5D/route.ts#L208), [CapacityDashboard.tsx:32-38](src/components/analytics/CapacityDashboard.tsx#L32), [:121-137](src/components/analytics/CapacityDashboard.tsx#L121)
 - Fix: use mutually exclusive categories: allocated and usable, blocked, vacant.
 
-### 13. Hover tooltip and ruler cursor are drawn in the wrong place — Verified
+### 13. Hover tooltip and ruler cursor are drawn in the wrong place — Fixed
 The cursor is stored in page coordinates but drawn inside the canvas, so the tooltip appears 288 px right and 55 px below the pointer (the sidebar width and header height), and the ruler's cursor marker is 288 px off.
 - Where: [FloorPlanCanvas.tsx:219](src/components/canvas/FloorPlanCanvas.tsx#L219), [:575-580](src/components/canvas/FloorPlanCanvas.tsx#L575), [Rulers.tsx:69-76](src/components/canvas/Rulers.tsx#L69), [:95-101](src/components/canvas/Rulers.tsx#L95)
 - Fix: subtract the canvas container's bounding rect.
 
-### 14. Ctrl+scroll and trackpad pinch also zoom the browser page — Verified
+### 14. Ctrl+scroll and trackpad pinch also zoom the browser page — Fixed
 React registers wheel listeners as passive, so `preventDefault()` in `handleWheel` has no effect.
 - Where: [FloorPlanCanvas.tsx:162-164](src/components/canvas/FloorPlanCanvas.tsx#L162), [:285](src/components/canvas/FloorPlanCanvas.tsx#L285)
 - Fix: add a native `wheel` listener with `{ passive: false }` in a `useEffect`.
@@ -115,12 +115,12 @@ Placing a bench from the library creates a desk with no seats, and the UI has no
 - Where: [ObjectLibrarySidebar.tsx:291-319](src/components/library/ObjectLibrarySidebar.tsx#L291), [floorplan.ts:142-144](src/types/floorplan.ts#L142)
 - Fix: generate seats from the template's capacity when placing a bay, and move and delete seats together with their bay.
 
-### 18. Undo mixes local layout with server data
+### 18. Undo mixes local layout with server data — Fixed
 Undo history stores seats, but allocations live on the server, so undo can show allocations that no longer exist in the database. Reloading never clears the history, so after a snapshot restore, an import or a bulk action, undo brings back the layout from before the reload, and Save then writes it back.
 - Where: [useFloorPlanStore.ts:402-432](src/store/useFloorPlanStore.ts#L402), [:482-508](src/store/useFloorPlanStore.ts#L482)
 - Fix: limit undo to layout objects and clear it whenever the floor is reloaded.
 
-### 19. The Zone menu closes before you can click it — Verified
+### 19. The Zone menu closes before you can click it — Fixed
 It opens on hover with an 8 px gap above the button, and moving the pointer into the gap closes it.
 - Where: [BulkActionBar.tsx:156-176](src/components/allocation/BulkActionBar.tsx#L156)
 - Fix: open it on click (or remove the gap), and confirm the move.
@@ -130,7 +130,7 @@ The header needs 1573 px, so the Role switcher is cut off (only 32 px visible), 
 - Where: [TopNavBar.tsx:92](src/components/navigation/TopNavBar.tsx#L92), [:101-107](src/components/navigation/TopNavBar.tsx#L101)
 - Fix: move secondary actions into a menu, add responsive breakpoints, and read the numbers from the floor data.
 
-### 21. Dates are off by a day, and history is deleted
+### 21. Dates are off by a day, and history is deleted — Partly fixed (see notes)
 - Default dates use UTC (`toISOString().split('T')[0]`), so in the evening in the Americas, or the early morning in Asia, "today" is the wrong day.
 - Assigning a program deletes all earlier allocations for those seats, so a future-dated assignment makes the seat show as vacant today. Unblocking deletes the block record, and the `active` flag is never used. There is no real allocation or block history, even though the app advertises date-aware capacity.
 - After an import or snapshot action the floor reloads without the chosen "as of" date, so the picker shows one date while the data reflects today.
@@ -138,12 +138,12 @@ The header needs 1573 px, so the Role switcher is cut off (only 32 px visible), 
 - Where: [useFloorPlanStore.ts:198](src/store/useFloorPlanStore.ts#L198), [BulkAssignModal.tsx:18-20](src/components/modals/BulkAssignModal.tsx#L18), [BulkBlockModal.tsx:16-18](src/components/modals/BulkBlockModal.tsx#L16), [bulk-assign/route.ts:62-66](src/app/api/allocation/bulk-assign/route.ts#L62), [bulk-unblock/route.ts:21-24](src/app/api/allocation/bulk-unblock/route.ts#L21), [ExcelImportModal.tsx:121](src/components/modals/ExcelImportModal.tsx#L121), [VersionSnapshotModal.tsx:47](src/components/history/VersionSnapshotModal.tsx#L47), [:82](src/components/history/VersionSnapshotModal.tsx#L82)
 - Fix: add a local-date helper; end-date old allocations instead of deleting them; deactivate blocks instead of deleting them; always pass `asOfDate`; validate date ranges.
 
-### 22. Errors are swallowed
+### 22. Errors are swallowed — Partly fixed (see notes)
 Failed loads, and network errors during bulk actions, only reach the browser console (Save now reports its failures). An empty or unreachable database shows a blank canvas under a hard-coded building name. The APIs have no input validation: `/api/audit-logs?limit=abc` returns a 500 (Verified), `limit` has no maximum, bad dates cause 500s, and raw Prisma error messages are sent to the browser. `alert()` and `confirm()` are used throughout.
 - Where: [useFloorPlanStore.ts:482-699](src/store/useFloorPlanStore.ts#L482), [page.tsx:23-40](src/app/page.tsx#L23), [audit-logs/route.ts:9](src/app/api/audit-logs/route.ts#L9)
 - Fix: validate input in each route (for example with zod), return consistent error responses, and add toasts and an empty state.
 
-### 23. Reloading the floor throws away unsaved layout edits
+### 23. Reloading the floor throws away unsaved layout edits — Fixed
 Every bulk action (assign, remove, block, unblock, zone), Excel import and snapshot action reloads the floor and replaces the objects with the saved ones. Any layout change made since the last Save (moves, adds, deletes) disappears without warning.
 - Where: [useFloorPlanStore.ts:494](src/store/useFloorPlanStore.ts#L494), called from [:578](src/store/useFloorPlanStore.ts#L578), [:605](src/store/useFloorPlanStore.ts#L605), [:636](src/store/useFloorPlanStore.ts#L636), [:663](src/store/useFloorPlanStore.ts#L663), [:690](src/store/useFloorPlanStore.ts#L690), [ExcelImportModal.tsx:121](src/components/modals/ExcelImportModal.tsx#L121), [VersionSnapshotModal.tsx:47](src/components/history/VersionSnapshotModal.tsx#L47), [:82](src/components/history/VersionSnapshotModal.tsx#L82)
 - Fix: track unsaved layout changes, and either reload only seats after allocation changes or ask before discarding edits.

@@ -1,3 +1,4 @@
+import { localDateString } from '@/lib/dates';
 import { create } from 'zustand';
 import {
   FloorObjectDTO,
@@ -93,6 +94,7 @@ export interface FloorPlanStore {
   isBulkBlockOpen: boolean;
   isBulkUnallocateOpen: boolean;
   isExcelImportOpen: boolean;
+  isExcelMapOpen: boolean;
   isExportModalOpen: boolean;
   isVersionModalOpen: boolean;
   isAuditModalOpen: boolean;
@@ -148,6 +150,7 @@ export interface FloorPlanStore {
   setBulkBlockOpen: (open: boolean) => void;
   setBulkUnallocateOpen: (open: boolean) => void;
   setExcelImportOpen: (open: boolean) => void;
+  setExcelMapOpen: (open: boolean) => void;
   setExportModalOpen: (open: boolean) => void;
   setVersionModalOpen: (open: boolean) => void;
   setAuditModalOpen: (open: boolean) => void;
@@ -155,7 +158,7 @@ export interface FloorPlanStore {
   closeDialogs: () => void;
 
   // Network Actions
-  loadFloorData: (floorId: string, asOfDate?: string) => Promise<void>;
+  loadFloorData: (floorId: string, asOfDate?: string, opts?: { keepLayout?: boolean }) => Promise<void>;
   saveFloorLayout: () => Promise<void>;
   bulkAssignProgram: (programId: string, effectiveDate?: string, shift?: string) => Promise<boolean>;
   bulkRemoveAllocation: () => Promise<boolean>;
@@ -170,6 +173,7 @@ export const isDialogOpen = (s: FloorPlanStore) =>
   s.isBulkBlockOpen ||
   s.isBulkUnallocateOpen ||
   s.isExcelImportOpen ||
+  s.isExcelMapOpen ||
   s.isExportModalOpen ||
   s.isVersionModalOpen ||
   s.isAuditModalOpen;
@@ -195,7 +199,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
   activeRole: 'Administrator',
   selectedProgramFilter: null,
   selectedStatusFilter: null,
-  asOfDate: new Date().toISOString().split('T')[0],
+  asOfDate: localDateString(),
 
   selectedObjectIds: [],
   selectedSeatIds: [],
@@ -217,6 +221,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
   isBulkBlockOpen: false,
   isBulkUnallocateOpen: false,
   isExcelImportOpen: false,
+  isExcelMapOpen: false,
   isExportModalOpen: false,
   isVersionModalOpen: false,
   isAuditModalOpen: false,
@@ -260,7 +265,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
     set({ asOfDate });
     const { floor } = get();
     if (floor) {
-      get().loadFloorData(floor.id, asOfDate);
+      get().loadFloorData(floor.id, asOfDate, { keepLayout: true });
     }
   },
 
@@ -400,34 +405,32 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
   setHoverObject: (hoverObjectId) => set({ hoverObjectId }),
 
   pushHistory: () => {
-    const { objects, seats, past } = get();
+    const { objects, past } = get();
     set({
-      past: [...past.slice(-25), { objects: JSON.parse(JSON.stringify(objects)), seats: JSON.parse(JSON.stringify(seats)) }],
+      past: [...past.slice(-25), { objects: JSON.parse(JSON.stringify(objects)), seats: [] }],
       future: [],
     });
   },
 
   undo: () => {
-    const { past, future, objects, seats } = get();
+    const { past, future, objects } = get();
     if (past.length === 0) return;
     const prev = past[past.length - 1];
     set({
       past: past.slice(0, -1),
-      future: [{ objects: JSON.parse(JSON.stringify(objects)), seats: JSON.parse(JSON.stringify(seats)) }, ...future],
+      future: [{ objects: JSON.parse(JSON.stringify(objects)), seats: [] }, ...future],
       objects: prev.objects,
-      seats: prev.seats,
     });
   },
 
   redo: () => {
-    const { past, future, objects, seats } = get();
+    const { past, future, objects } = get();
     if (future.length === 0) return;
     const next = future[0];
     set({
-      past: [...past, { objects: JSON.parse(JSON.stringify(objects)), seats: JSON.parse(JSON.stringify(seats)) }],
+      past: [...past, { objects: JSON.parse(JSON.stringify(objects)), seats: [] }],
       future: future.slice(1),
       objects: next.objects,
-      seats: next.seats,
     });
   },
 
@@ -464,6 +467,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
   setBulkBlockOpen: (isBulkBlockOpen) => set({ isBulkBlockOpen }),
   setBulkUnallocateOpen: (isBulkUnallocateOpen) => set({ isBulkUnallocateOpen }),
   setExcelImportOpen: (isExcelImportOpen) => set({ isExcelImportOpen }),
+  setExcelMapOpen: (isExcelMapOpen) => set({ isExcelMapOpen }),
   setExportModalOpen: (isExportModalOpen) => set({ isExportModalOpen }),
   setVersionModalOpen: (isVersionModalOpen) => set({ isVersionModalOpen }),
   setAuditModalOpen: (isAuditModalOpen) => set({ isAuditModalOpen }),
@@ -474,12 +478,13 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
       isBulkBlockOpen: false,
       isBulkUnallocateOpen: false,
       isExcelImportOpen: false,
+      isExcelMapOpen: false,
       isExportModalOpen: false,
       isVersionModalOpen: false,
       isAuditModalOpen: false,
     }),
 
-  loadFloorData: async (floorId, asOfDateStr) => {
+  loadFloorData: async (floorId, asOfDateStr, opts) => {
     try {
       set({ isLoading: true });
       const query = asOfDateStr ? `?asOfDate=${encodeURIComponent(asOfDateStr)}` : '';
@@ -491,8 +496,16 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
           floor: data.floor,
           zones: data.zones,
           programs: data.programs,
-          objects: data.objects,
-          persistedObjectIds: data.objects.map((o: FloorObjectDTO) => o.id),
+          // Allocation actions only change seats, so they keep unsaved layout edits and undo history.
+          // Any other load (floor switch, snapshot restore, first load) replaces the layout and clears history.
+          ...(opts?.keepLayout
+            ? {}
+            : {
+                objects: data.objects,
+                persistedObjectIds: data.objects.map((o: FloorObjectDTO) => o.id),
+                past: [],
+                future: [],
+              }),
           seats: data.seats,
           versions: data.versions,
           isLoading: false,
@@ -575,7 +588,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
       });
       const data = await res.json();
       if (data.success) {
-        await get().loadFloorData(floor.id, asOfDate);
+        await get().loadFloorData(floor.id, asOfDate, { keepLayout: true });
         set({ isBulkAssignOpen: false });
         return true;
       }
@@ -602,7 +615,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
       });
       const data = await res.json();
       if (data.success) {
-        await get().loadFloorData(floor.id, asOfDate);
+        await get().loadFloorData(floor.id, asOfDate, { keepLayout: true });
         set({ isBulkUnallocateOpen: false });
         return true;
       }
@@ -633,7 +646,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
       });
       const data = await res.json();
       if (data.success) {
-        await get().loadFloorData(floor.id, asOfDate);
+        await get().loadFloorData(floor.id, asOfDate, { keepLayout: true });
         set({ isBulkBlockOpen: false });
         return true;
       }
@@ -660,7 +673,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
       });
       const data = await res.json();
       if (data.success) {
-        await get().loadFloorData(floor.id, asOfDate);
+        await get().loadFloorData(floor.id, asOfDate, { keepLayout: true });
         return true;
       }
       alert(data.error || 'Failed to unblock seats');
@@ -687,7 +700,7 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
       });
       const data = await res.json();
       if (data.success) {
-        await get().loadFloorData(floor.id, asOfDate);
+        await get().loadFloorData(floor.id, asOfDate, { keepLayout: true });
         return true;
       }
       alert(data.error || 'Failed to update zone');

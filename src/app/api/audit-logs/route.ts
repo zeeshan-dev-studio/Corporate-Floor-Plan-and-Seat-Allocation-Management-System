@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const parsedLimit = parseInt(searchParams.get('limit') || '50', 10);
+    // Bad or huge values fall back to sane bounds instead of failing the query
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 50;
     const action = searchParams.get('action');
     const entityType = searchParams.get('entityType');
     const search = searchParams.get('search');

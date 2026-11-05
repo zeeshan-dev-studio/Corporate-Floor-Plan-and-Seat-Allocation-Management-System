@@ -1,5 +1,6 @@
 'use client';
 
+import { localDateString } from '@/lib/dates';
 import React, { useState } from 'react';
 import { useFloorPlanStore } from '@/store/useFloorPlanStore';
 import { Ban, Calendar, X, FileText } from 'lucide-react';
@@ -14,7 +15,7 @@ export const BulkBlockModal: React.FC = () => {
 
   const [reason, setReason] = useState<string>('Maintenance');
   const [startDate, setStartDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+    localDateString()
   );
   const [endDate, setEndDate] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -24,6 +25,10 @@ export const BulkBlockModal: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (endDate && endDate < startDate) {
+      alert('The end date cannot be before the start date.');
+      return;
+    }
     setIsSubmitting(true);
     await bulkBlockSeats(reason, startDate, endDate || undefined, notes);
     setIsSubmitting(false);

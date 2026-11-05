@@ -378,7 +378,7 @@ export const ObjectLibrarySidebar: React.FC = () => {
             {((catalog as any)[selectedCategory] || []).map((item: any) => (
               <div
                 key={item.id}
-                className="bg-slate-800/50 hover:bg-slate-800 border border-slate-750 hover:border-sky-500/50 rounded-xl p-3 flex items-center justify-between transition-all group"
+                className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/50 rounded-xl p-3 flex items-center justify-between transition-all group"
               >
                 <div>
                   <div className="font-semibold text-xs text-white group-hover:text-sky-400 transition-colors">
@@ -418,7 +418,7 @@ export const ObjectLibrarySidebar: React.FC = () => {
             return (
               <div
                 key={lid}
-                className="bg-slate-800/40 border border-slate-750 rounded-lg p-2.5 flex items-center justify-between hover:bg-slate-800/80 transition-colors"
+                className="bg-slate-800/40 border border-slate-700 rounded-lg p-2.5 flex items-center justify-between hover:bg-slate-800/80 transition-colors"
               >
                 <div className="font-medium text-slate-200 capitalize">
                   {lid.replace('_', ' ')}

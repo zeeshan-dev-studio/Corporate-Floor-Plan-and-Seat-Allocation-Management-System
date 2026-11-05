@@ -1,5 +1,6 @@
 'use client';
 
+import { localDateString } from '@/lib/dates';
 import React, { useState } from 'react';
 import { useFloorPlanStore } from '@/store/useFloorPlanStore';
 import { AlertTriangle, Users, Calendar, Clock, X } from 'lucide-react';
@@ -16,7 +17,7 @@ export const BulkAssignModal: React.FC = () => {
 
   const [selectedProgramId, setSelectedProgramId] = useState<string>('');
   const [effectiveDate, setEffectiveDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+    localDateString()
   );
   const [shift, setShift] = useState<string>('09:00 - 18:00');
   const [isSubmitting, setIsSubmitting] = useState(false);

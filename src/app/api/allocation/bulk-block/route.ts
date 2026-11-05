@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
     const sDate = startDate ? new Date(startDate) : new Date();
     const eDate = endDate ? new Date(endDate) : null;
 
+    if (Number.isNaN(sDate.getTime()) || (eDate && Number.isNaN(eDate.getTime()))) {
+      return NextResponse.json({ success: false, error: 'Invalid date' }, { status: 400 });
+    }
+    if (eDate && eDate < sDate) {
+      return NextResponse.json({ success: false, error: 'The end date cannot be before the start date' }, { status: 400 });
+    }
+
     await prisma.$transaction(async (tx) => {
       // First deactivate any previous blocks for these seats
       await tx.seatBlock.deleteMany({

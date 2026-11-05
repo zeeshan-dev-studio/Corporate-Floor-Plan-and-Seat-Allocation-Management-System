@@ -159,7 +159,7 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
   );
 
   // Wheel Zoom towards mouse cursor
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     if (!containerRef.current) return;
 
@@ -181,6 +181,16 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
     setZoom(newZoom);
     setPan(newPanX, newPanY);
   };
+
+  // React attaches wheel listeners as passive, so preventDefault (which stops the browser page zooming
+  // on Ctrl+wheel / pinch) only works on a native non-passive listener.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom, panX, panY]);
 
   // Mouse Down
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -216,7 +226,9 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
 
   // Mouse Move
   const handleMouseMove = (e: React.MouseEvent) => {
-    setCursorPos({ x: e.clientX, y: e.clientY });
+    // Relative to the canvas, because the tooltip and ruler marker are drawn inside it
+    const box = containerRef.current?.getBoundingClientRect();
+    setCursorPos({ x: e.clientX - (box?.left || 0), y: e.clientY - (box?.top || 0) });
 
     if (isPanning) {
       setPan(e.clientX - panStart.x, e.clientY - panStart.y);
@@ -282,7 +294,6 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
       className={`relative w-full h-full bg-[#181b22] overflow-hidden select-none ${
         isPanning || isSpacePressed ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
       }`}
-      onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -304,6 +315,8 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
       {/* Primary SVG Vector Canvas */}
       <svg
         id="cad-main-svg"
+        data-floor-width={floorWidth}
+        data-floor-height={floorHeight}
         ref={svgRef}
         className="w-full h-full block"
         xmlns="http://www.w3.org/2000/svg"
@@ -353,7 +366,7 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
         </defs>
 
         {/* Global Pan and Zoom Transformation Group */}
-        <g transform={`translate(${panX}, ${panY}) scale(${zoom})`}>
+        <g id="cad-viewport" transform={`translate(${panX}, ${panY}) scale(${zoom})`}>
           {/* Floor Canvas Background & Grid */}
           <rect
             id="cad-canvas-bg"
@@ -536,6 +549,7 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
           {/* 10. MARQUEE SELECTION RECTANGLE */}
           {marqueeBox && (
             <rect
+              data-export-hide="true"
               x={Math.min(marqueeBox.x, marqueeBox.x + marqueeBox.width)}
               y={Math.min(marqueeBox.y, marqueeBox.y + marqueeBox.height)}
               width={Math.abs(marqueeBox.width)}

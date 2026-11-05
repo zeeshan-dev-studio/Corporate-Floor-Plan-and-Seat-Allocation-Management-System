@@ -6,7 +6,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, floorId, rows, user = 'Administrator', userRole = 'Administrator' } = body;
 
-    if (!rows || !Array.isArray(rows)) {
+    // The preview step sends the sheet's rows; the commit step sends validRows instead
+    if (action === 'VALIDATE' && (!rows || !Array.isArray(rows))) {
       return NextResponse.json({ success: false, error: 'Rows array required' }, { status: 400 });
     }
 
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
         const rawProgram = (row.program || row['Program'] || '').toString().trim();
         const rawZone = (row.zone || row['Zone'] || '').toString().trim();
         const rawShift = (row.shift || row['Shift'] || '09:00 - 18:00').toString().trim();
-        const rawEmployee = (row.employee || row['Employee'] || '').toString().trim();
+        const rawEmployee = (row.employee || row['Employee'] || row['Employee Name'] || '').toString().trim();
 
         const errors: string[] = [];
 
@@ -56,8 +57,13 @@ export async function POST(req: NextRequest) {
           seenSeatIds.add(rawSeatId);
         }
 
+        // "Unallocated" (what the app's own export writes for vacant seats) clears the seat on purpose.
+        // A blank cell is rejected so a gap in the sheet can never wipe an allocation.
+        const isClear = rawProgram.toLowerCase() === 'unallocated';
         let matchedProgram = null;
-        if (rawProgram) {
+        if (!rawProgram) {
+          errors.push('Program is blank (enter a program, or "Unallocated" to clear the seat)');
+        } else if (!isClear) {
           matchedProgram = programMap.get(rawProgram.toLowerCase());
           if (!matchedProgram) {
             errors.push(`Unknown Program "${rawProgram}"`);
@@ -75,7 +81,7 @@ export async function POST(req: NextRequest) {
           rowNumber: i + 2, // Excel 1-based header offset
           seatId: rawSeatId,
           dbSeatId: seatRecord?.id,
-          program: matchedProgram ? matchedProgram.name : rawProgram || 'Unallocated',
+          program: matchedProgram ? matchedProgram.name : 'Unallocated',
           programId: matchedProgram?.id || null,
           currentProgram,
           isConflict,
@@ -113,22 +119,31 @@ export async function POST(req: NextRequest) {
       }
 
       let appliedCount = 0;
+      let skippedCount = 0;
 
       await prisma.$transaction(async (tx) => {
         for (const item of validRows) {
-          if (!item.dbSeatId) continue;
+          // Never trust ids sent back by the browser: look the seat and program up again
+          const seat = seatMap.get(String(item.seatId || '').trim().toUpperCase());
+          const programName = String(item.program || '').trim();
+          const clears = programName.toLowerCase() === 'unallocated';
+          const program = !programName || clears ? null : programMap.get(programName.toLowerCase());
+          if (!seat || (!clears && !program)) {
+            skippedCount++;
+            continue;
+          }
 
           // Delete current allocation
           await tx.seatAllocation.deleteMany({
-            where: { seatId: item.dbSeatId },
+            where: { seatId: seat.id },
           });
 
           // If program assigned, create new allocation
-          if (item.programId) {
+          if (program) {
             await tx.seatAllocation.create({
               data: {
-                seatId: item.dbSeatId,
-                programId: item.programId,
+                seatId: seat.id,
+                programId: program.id,
                 status: 'ALLOCATED',
                 shift: item.shift || '09:00 - 18:00',
                 employeeName: item.employee || null,
@@ -148,6 +163,7 @@ export async function POST(req: NextRequest) {
             userRole,
             newValue: JSON.stringify({
               importedRows: appliedCount,
+              skippedRows: skippedCount,
               timestamp: new Date().toISOString(),
             }),
             reason: `Batch Excel seat allocation import (${appliedCount} records)`,
@@ -159,7 +175,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         appliedCount,
-        message: `Successfully imported and updated ${appliedCount} seats from Excel.`,
+        skippedCount,
+        message:
+          `Successfully imported and updated ${appliedCount} seats from Excel.` +
+          (skippedCount ? ` ${skippedCount} rows were skipped because they no longer matched a seat or program.` : ''),
       });
     }
 

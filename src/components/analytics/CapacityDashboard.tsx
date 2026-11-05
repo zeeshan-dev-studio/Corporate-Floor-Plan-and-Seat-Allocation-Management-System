@@ -30,7 +30,7 @@ export const CapacityDashboard: React.FC = () => {
   if (!isAnalyticsDrawerOpen || !floor) return null;
 
   const totalSeats = seats.length;
-  const allocatedSeats = seats.filter((s) => s.programId).length;
+  const allocatedSeats = seats.filter((s) => s.programId && !s.isBlocked).length;
   const blockedSeats = seats.filter((s) => s.isBlocked).length;
   const vacantSeats = seats.filter((s) => !s.programId && !s.isBlocked).length;
   const netUsable = totalSeats - blockedSeats;
@@ -38,7 +38,7 @@ export const CapacityDashboard: React.FC = () => {
     netUsable > 0 ? Math.round((allocatedSeats / netUsable) * 100) : 0;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-slate-900/98 border-l border-slate-700/80 shadow-2xl backdrop-blur-xl flex flex-col text-slate-200 animate-in slide-in-from-right duration-200">
+    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-slate-900/95 border-l border-slate-700/80 shadow-2xl backdrop-blur-xl flex flex-col text-slate-200 animate-in slide-in-from-right duration-200">
       {/* Header */}
       <div className="p-5 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -121,17 +121,17 @@ export const CapacityDashboard: React.FC = () => {
           <div className="h-3 w-full bg-slate-800 rounded-full overflow-hidden flex">
             <div
               className="bg-sky-500 h-full transition-all"
-              style={{ width: `${(allocatedSeats / totalSeats) * 100}%` }}
+              style={{ width: `${totalSeats ? (allocatedSeats / totalSeats) * 100 : 0}%` }}
               title={`Allocated: ${allocatedSeats}`}
             />
             <div
               className="bg-red-500 h-full transition-all"
-              style={{ width: `${(blockedSeats / totalSeats) * 100}%` }}
+              style={{ width: `${totalSeats ? (blockedSeats / totalSeats) * 100 : 0}%` }}
               title={`Blocked: ${blockedSeats}`}
             />
             <div
               className="bg-slate-600 h-full transition-all"
-              style={{ width: `${(vacantSeats / totalSeats) * 100}%` }}
+              style={{ width: `${totalSeats ? (vacantSeats / totalSeats) * 100 : 0}%` }}
               title={`Vacant: ${vacantSeats}`}
             />
           </div>
@@ -252,7 +252,7 @@ export const CapacityDashboard: React.FC = () => {
               <tbody className="divide-y divide-slate-800">
                 {zones.map((z) => {
                   const zSeats = seats.filter((s) => s.zoneId === z.id);
-                  const zAlloc = zSeats.filter((s) => s.programId).length;
+                  const zAlloc = zSeats.filter((s) => s.programId && !s.isBlocked).length;
                   const zOcc = zSeats.length > 0 ? Math.round((zAlloc / zSeats.length) * 100) : 0;
                   return (
                     <tr key={z.id} className="hover:bg-slate-800/40">

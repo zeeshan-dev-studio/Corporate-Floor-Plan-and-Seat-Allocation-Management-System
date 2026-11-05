@@ -201,12 +201,12 @@ export async function GET(
         color: z.color,
         polygon,
         totalSeats: zoneSeats.length,
-        allocatedSeats: zoneSeats.filter((s) => s.programId).length,
+        allocatedSeats: zoneSeats.filter((s) => s.programId && !s.isBlocked).length,
       };
     });
 
     const totalSeats = seats.length;
-    const allocatedSeats = seats.filter((s) => s.programId).length;
+    const allocatedSeats = seats.filter((s) => s.programId && !s.isBlocked).length;
     const blockedSeats = seats.filter((s) => s.isBlocked).length;
     const vacantSeats = seats.filter((s) => !s.programId && !s.isBlocked).length;
     const netUsable = totalSeats - blockedSeats;

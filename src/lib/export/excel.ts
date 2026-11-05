@@ -1,11 +1,12 @@
 import ExcelJS from 'exceljs';
-import { SeatDTO, ProgramDTO, FloorDTO, AuditLogDTO } from '@/types/floorplan';
+import { SeatDTO, ProgramDTO, FloorDTO, AuditLogDTO, ZoneDTO } from '@/types/floorplan';
 
 export async function generateEnterpriseExcelWorkbook({
   buildingName,
   floor,
   seats,
   programs,
+  zones = [],
   auditLogs = [],
   includeSensitiveEmployeeData = true,
 }: {
@@ -13,6 +14,7 @@ export async function generateEnterpriseExcelWorkbook({
   floor: FloorDTO;
   seats: SeatDTO[];
   programs: ProgramDTO[];
+  zones?: ZoneDTO[];
   auditLogs?: AuditLogDTO[];
   includeSensitiveEmployeeData?: boolean;
 }): Promise<Blob> {
@@ -72,7 +74,7 @@ export async function generateEnterpriseExcelWorkbook({
       seatId: seat.seatId,
       building: buildingName,
       floor: floor.name,
-      zone: seat.zoneId ? `Zone ${seat.bayCode?.split('-')?.[1] || 'Main'}` : 'Open',
+      zone: zones.find((z) => z.id === seat.zoneId)?.name || 'Open',
       bayCode: seat.bayCode || 'Individual',
       seatType: seat.seatType.toUpperCase(),
       program: seat.programName || 'Unallocated',
@@ -132,9 +134,12 @@ export async function generateEnterpriseExcelWorkbook({
       blocked: prog.blockedCount,
       netUsable: prog.netUsable,
       available: prog.availableCount,
-      shortageSurplus: prog.shortageSurplus >= 0 ? `+${prog.shortageSurplus}` : `${prog.shortageSurplus}`,
-      utilization: `${prog.utilization}%`,
+      shortageSurplus: prog.shortageSurplus,
+      utilization: prog.utilization / 100,
     });
+    // Real numbers (sortable, summable) shown with friendly formats
+    row.getCell('shortageSurplus').numFmt = '+0;-0;0';
+    row.getCell('utilization').numFmt = '0%';
 
     if (index % 2 === 1) row.fill = zebraFill;
 
@@ -169,17 +174,19 @@ export async function generateEnterpriseExcelWorkbook({
   floorSheet.getRow(1).fill = headerFill;
   floorSheet.getRow(1).height = 26;
 
-  floorSheet.addRow({
+  const floorRow = floorSheet.addRow({
     building: buildingName,
     floorName: floor.name,
     floorNumber: floor.floorNumber,
-    totalArea: floor.totalArea.toLocaleString(),
+    totalArea: floor.totalArea,
     totalSeats: floor.totalSeats,
     allocatedSeats: floor.allocatedSeats,
     vacantSeats: floor.vacantSeats,
     blockedSeats: floor.blockedSeats,
-    utilization: `${floor.utilization}%`,
+    utilization: (floor.utilization || 0) / 100,
   });
+  floorRow.getCell('totalArea').numFmt = '#,##0';
+  floorRow.getCell('utilization').numFmt = '0%';
 
   // ==========================================
   // SHEET 4: ALLOCATION HISTORY

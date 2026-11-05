@@ -1,5 +1,6 @@
 'use client';
 
+import { localDateString } from '@/lib/dates';
 import React, { useState } from 'react';
 import { useFloorPlanStore } from '@/store/useFloorPlanStore';
 import {
@@ -28,7 +29,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
     seats,
     programs,
     viewMode,
-    auditLogs,
+    zones,
   } = useFloorPlanStore();
 
   const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'svg' | 'png'>('pdf');
@@ -48,18 +49,28 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
 
     try {
       if (exportFormat === 'excel') {
+        // The store never holds audit entries, so fetch the latest ones for the history sheet
+        let auditLogs: any[] = [];
+        try {
+          const res = await fetch('/api/audit-logs?limit=500');
+          const data = await res.json();
+          if (data.success) auditLogs = data.logs;
+        } catch {
+          /* export without history rather than fail */
+        }
         const blob = await generateEnterpriseExcelWorkbook({
           buildingName: building.name,
           floor,
           seats,
           programs,
+          zones,
           auditLogs,
           includeSensitiveEmployeeData: includeEmployeeData,
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${building.name}_${floor.name}_Master_${new Date().toISOString().split('T')[0]}.xlsx`;
+        a.download = `${building.name}_${floor.name}_Master_${localDateString()}.xlsx`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

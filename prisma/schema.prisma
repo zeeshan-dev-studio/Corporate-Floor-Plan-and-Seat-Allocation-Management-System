@@ -70,6 +70,8 @@ model FloorObject {
   seats       Seat[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([floorId])
 }
 
 model Program {
@@ -103,6 +105,8 @@ model Seat {
   blocks        SeatBlock[]
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
+
+  @@index([floorId])
 }
 
 model SeatAllocation {
@@ -120,6 +124,8 @@ model SeatAllocation {
   program       Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([seatId])
 }
 
 model SeatBlock {
@@ -133,6 +139,8 @@ model SeatBlock {
   seat      Seat      @relation(fields: [seatId], references: [id], onDelete: Cascade)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([seatId])
 }
 
 model AuditLog {
@@ -148,6 +156,8 @@ model AuditLog {
   reason     String?
   source     String   @default("WEB_UI") // WEB_UI, EXCEL_IMPORT, BULK_ACTION, EDITOR
   timestamp  DateTime @default(now())
+
+  @@index([timestamp])
 }
 
 model FloorVersion {

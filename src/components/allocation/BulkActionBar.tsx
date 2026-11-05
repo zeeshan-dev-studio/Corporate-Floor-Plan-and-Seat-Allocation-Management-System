@@ -1,5 +1,6 @@
 'use client';
 
+import { localDateString } from '@/lib/dates';
 import React from 'react';
 import { useFloorPlanStore } from '@/store/useFloorPlanStore';
 import {
@@ -69,7 +70,7 @@ export const BulkActionBar: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Selected_Seats_${selectedSeatIds.length}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    a.download = `Selected_Seats_${selectedSeatIds.length}_${localDateString()}.xlsx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -159,7 +160,7 @@ export const BulkActionBar: React.FC = () => {
               <MapPin className="w-3.5 h-3.5 text-indigo-400" />
               Zone
             </button>
-            <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1.5 min-w-[140px] z-50">
+            <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block group-focus-within:block before:content-[''] before:absolute before:-bottom-2 before:left-0 before:h-2 before:w-full bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1.5 min-w-[140px] z-50">
               <div className="text-[10px] text-slate-400 px-2 py-1 font-semibold uppercase">Move to Zone:</div>
               {zones.map((z) => (
                 <button

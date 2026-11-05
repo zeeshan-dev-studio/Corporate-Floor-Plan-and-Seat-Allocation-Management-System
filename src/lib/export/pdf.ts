@@ -15,6 +15,25 @@ export interface PDFExportOptions {
   notes?: string;
 }
 
+/**
+ * The on-screen SVG has no size or viewBox of its own and is panned and zoomed by a transform, so serialising it
+ * as-is gives a 300x150 crop of whatever is visible. This returns a copy that shows the whole floor.
+ */
+export function exportableSvg(svg: SVGSVGElement): SVGSVGElement {
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  const w = Number(svg.getAttribute('data-floor-width')) || 2800;
+  const h = Number(svg.getAttribute('data-floor-height')) || 1800;
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+  clone.setAttribute('width', String(w));
+  clone.setAttribute('height', String(h));
+  clone.removeAttribute('class');
+  const viewport = clone.querySelector('#cad-viewport');
+  if (viewport) viewport.removeAttribute('transform');
+  clone.querySelectorAll('[data-export-hide]').forEach((n) => n.remove());
+  return clone;
+}
+
 export async function exportFloorPlanToPDF(
   svgElement: SVGSVGElement,
   options: PDFExportOptions
@@ -49,7 +68,7 @@ export async function exportFloorPlanToPDF(
   const contentHeight = pageHeight - margin * 2;
 
   // Render SVG to image data URL via Canvas
-  const svgString = new XMLSerializer().serializeToString(svgElement);
+  const svgString = new XMLSerializer().serializeToString(exportableSvg(svgElement));
   const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(svgBlob);
 
@@ -297,7 +316,7 @@ export async function exportFloorPlanToPDF(
 
 export function downloadSVG(svgElement: SVGSVGElement, filename: string): void {
   const serializer = new XMLSerializer();
-  let source = serializer.serializeToString(svgElement);
+  let source = serializer.serializeToString(exportableSvg(svgElement));
 
   // Add namespaces if missing
   if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
@@ -321,7 +340,7 @@ export async function downloadPNG(
   scale = 2
 ): Promise<void> {
   const serializer = new XMLSerializer();
-  const source = serializer.serializeToString(svgElement);
+  const source = serializer.serializeToString(exportableSvg(svgElement));
   const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
 

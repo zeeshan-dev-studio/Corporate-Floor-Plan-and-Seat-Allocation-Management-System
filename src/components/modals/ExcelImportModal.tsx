@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFloorPlanStore } from '@/store/useFloorPlanStore';
 import ExcelJS from 'exceljs';
 import {
@@ -27,10 +27,20 @@ export const ExcelImportModal: React.FC = () => {
   const [isCommitting, setIsCommitting] = useState(false);
   const [validationResult, setValidationResult] = useState<any>(null);
 
+  // Start clean each time the dialog is opened
+  useEffect(() => {
+    if (!isExcelImportOpen) {
+      setFile(null);
+      setValidationResult(null);
+    }
+  }, [isExcelImportOpen]);
+
   if (!isExcelImportOpen) return null;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
+    // Clear the input so choosing the same file again still fires onChange
+    e.target.value = '';
     if (!selected) return;
     setFile(selected);
     setValidationResult(null);
@@ -51,25 +61,20 @@ export const ExcelImportModal: React.FC = () => {
       }
 
       const rows: any[] = [];
-      const headers: string[] = [];
+      // Header text by column number, so a blank header cell cannot shift the columns after it
+      const headers: Record<number, string> = {};
+      worksheet.getRow(1).eachCell({ includeEmpty: false }, (cell, colNumber) => {
+        headers[colNumber] = cell.text.trim();
+      });
 
       worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) {
-          row.eachCell((cell) => {
-            headers.push(cell.text.trim());
-          });
-        } else {
-          const rowData: Record<string, any> = {};
-          row.eachCell((cell, colNumber) => {
-            const header = headers[colNumber - 1];
-            if (header) {
-              rowData[header] = cell.text;
-            }
-          });
-          if (Object.keys(rowData).length > 0) {
-            rows.push(rowData);
-          }
-        }
+        if (rowNumber === 1) return;
+        const rowData: Record<string, any> = {};
+        row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+          const header = headers[colNumber];
+          if (header) rowData[header] = cell.text;
+        });
+        if (Object.keys(rowData).length > 0) rows.push(rowData);
       });
 
       // Send to server validation endpoint
@@ -118,7 +123,7 @@ export const ExcelImportModal: React.FC = () => {
       if (data.success) {
         alert(data.message || 'Excel allocations applied successfully!');
         if (floor) {
-          await loadFloorData(floor.id);
+          await loadFloorData(floor.id, undefined, { keepLayout: true });
         }
         setExcelImportOpen(false);
       } else {
@@ -161,7 +166,7 @@ export const ExcelImportModal: React.FC = () => {
             <input
               type="file"
               id="excel-file-input"
-              accept=".xlsx,.xls"
+              accept=".xlsx"
               onChange={handleFileChange}
               className="hidden"
             />
