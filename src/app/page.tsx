@@ -11,6 +11,7 @@ import { BulkAssignModal } from '@/components/modals/BulkAssignModal';
 import { BulkBlockModal } from '@/components/modals/BulkBlockModal';
 import { BulkUnallocateModal } from '@/components/modals/BulkUnallocateModal';
 import { ExcelImportModal } from '@/components/modals/ExcelImportModal';
+import { ExcelMapModal } from '@/components/modals/ExcelMapModal';
 import { ExportModal } from '@/components/modals/ExportModal';
 import { VersionSnapshotModal } from '@/components/history/VersionSnapshotModal';
 import { AuditHistoryModal } from '@/components/history/AuditHistoryModal';
@@ -78,6 +79,7 @@ export default function FloorPlanPage() {
       <BulkBlockModal />
       <BulkUnallocateModal />
       <ExcelImportModal />
+      <ExcelMapModal />
       <ExportModal svgRef={svgRef} />
       <VersionSnapshotModal />
       <AuditHistoryModal />

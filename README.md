@@ -33,6 +33,21 @@ An enterprise-grade, high-performance web application designed for corporate and
 
 ---
 
+## Excel Floor Maps
+
+Floors drawn in Excel can be read straight into the app (top bar: **Excel Map**).
+
+How the workbook is read:
+
+- **One bordered cell = one seat.** The text in the cell is the seat number (`A-001`). Empty cells are corridors.
+- **The border colour is the category.** The `Legend` sheet lists each colour with its meaning: a program, Vacant, Non-usable or Support. A colour close to a legend colour still matches; anything else is reported, never silently dropped. If a cell has no border, its fill colour is used.
+- **A merged, bordered block is a room** (meeting room, pantry, lift). Do not merge seat cells.
+- The map sheet is the one named like *Floor Plan*; the `Legend` sheet has the columns Swatch, Hex, Meaning, Category, Program code.
+
+In the app you can look at the map as HTML, fix categories and seat numbers (Select / Paint / Erase), download the result as Excel or a standalone HTML page, and create a **new floor** from it. Seat A-001 becomes `<prefix>-A-001`. Existing floors are never changed by this import.
+
+Try it: press **Use sample** in the dialog, or run `npm run sample:excel` to write `samples/Sample-Floor-Plan.xlsx` and `samples/Sample-Floor-Plan.html`. `npm run check:excel-map` checks that a workbook survives write, read and compare.
+
 ## Tech Stack
 
 - **Framework**: Next.js (App Router), React 18, TypeScript

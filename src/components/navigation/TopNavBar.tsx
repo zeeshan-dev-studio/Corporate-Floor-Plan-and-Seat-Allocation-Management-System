@@ -20,7 +20,9 @@ import {
   Shield,
   Layers,
   Sparkles,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { FloorSwitcher } from './FloorSwitcher';
 import { UserRole } from '@/types/floorplan';
 
 export const TopNavBar: React.FC = () => {
@@ -53,6 +55,7 @@ export const TopNavBar: React.FC = () => {
     setStatusFilter,
     setExportModalOpen,
     setExcelImportOpen,
+    setExcelMapOpen,
     setVersionModalOpen,
     setAuditModalOpen,
     setAnalyticsDrawerOpen,
@@ -100,10 +103,10 @@ export const TopNavBar: React.FC = () => {
             <div className="leading-tight text-xs font-bold text-white flex items-center gap-1.5">
               <span>{building?.name || 'Chennai Campus - Building F2'}</span>
               <span className="text-slate-500">/</span>
-              <span className="text-sky-400 font-semibold">{floor?.name || 'Floor 3'}</span>
+              <FloorSwitcher />
             </div>
             <div className="text-[10px] text-slate-400 font-mono">
-              35,000 Sq Ft • 532 Total Workstations
+              {(floor?.totalArea ?? 0).toLocaleString()} Sq Ft • {seats.length} Total Workstations
             </div>
           </div>
         </div>
@@ -300,6 +303,16 @@ export const TopNavBar: React.FC = () => {
         >
           <Upload className="w-3.5 h-3.5 text-emerald-400" />
           <span className="hidden lg:inline">Import</span>
+        </button>
+
+        {/* Excel Floor Map Trigger */}
+        <button
+          onClick={() => setExcelMapOpen(true)}
+          title="Import a floor drawn in Excel"
+          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-colors"
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="hidden lg:inline">Excel Map</span>
         </button>
 
         {/* Version Snapshots Trigger */}

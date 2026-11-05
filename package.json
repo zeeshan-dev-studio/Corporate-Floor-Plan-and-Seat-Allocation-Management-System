@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "sample:excel": "tsx scripts/generate-sample-floorplan.ts",
+    "check:excel-map": "tsx scripts/verify-excel-map.ts"
   },
   "keywords": [],
   "author": "",
