@@ -38,7 +38,7 @@ const inputCls =
   'w-full bg-slate-950 border border-slate-700 rounded-md px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500';
 
 export const ExcelMapModal: React.FC = () => {
-  const { isExcelMapOpen, setExcelMapOpen, building, seats, programs, activeRole, past, loadFloorData } = useFloorPlanStore();
+  const { isExcelMapOpen, setExcelMapOpen, building, floor, seats, programs, activeRole, past, loadFloorData } = useFloorPlanStore();
 
   const [model, setModel] = useState<FloorMapModel | null>(null);
   const [fileName, setFileName] = useState('');
@@ -56,6 +56,8 @@ export const ExcelMapModal: React.FC = () => {
   const [createMissing, setCreateMissing] = useState(true);
   const [check, setCheck] = useState<any>(null);
   const [creating, setCreating] = useState(false);
+  const [mode, setMode] = useState<'create' | 'update'>('create');
+  const [skipOccupied, setSkipOccupied] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Suggest the next floor number and a matching seat ID prefix each time the dialog opens
@@ -89,6 +91,14 @@ export const ExcelMapModal: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExcelMapOpen]);
 
+  // Updating the open floor: its own seat ID prefix is what the map's numbers must be matched against
+  useEffect(() => {
+    if (!isExcelMapOpen || mode !== 'update') return;
+    const parts = seats[0]?.seatId?.split('-') || [];
+    if (parts.length >= 3) setSeatPrefix(parts.slice(0, -2).join('-'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isExcelMapOpen, mode, floor?.id]);
+
   const resolved = useMemo(() => (model ? resolveSeatIds(model, seatPrefix || 'X', defaultZone) : []), [model, seatPrefix, defaultZone]);
   const seatIds = useMemo(() => resolved.map((r) => r.seatId), [resolved]);
   const errorSeats = useMemo(() => {
@@ -103,10 +113,10 @@ export const ExcelMapModal: React.FC = () => {
     if (!model || !isExcelMapOpen || !seatPrefix) return;
     const t = setTimeout(async () => {
       try {
-        const res = await fetch('/api/import/floor-map', {
+        const res = await fetch(mode === 'update' ? '/api/import/floor-map/apply' : '/api/import/floor-map', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'PREVIEW', buildingId: building?.id, floorName, floorNumber, seatPrefix, defaultZone, createMissingPrograms: createMissing, model }),
+          body: JSON.stringify({ action: 'PREVIEW', buildingId: building?.id, floorId: floor?.id, floorName, floorNumber, seatPrefix, defaultZone, createMissingPrograms: createMissing, skipOccupied, model }),
         });
         setCheck(await res.json());
       } catch {
@@ -114,7 +124,7 @@ export const ExcelMapModal: React.FC = () => {
       }
     }, 500);
     return () => clearTimeout(t);
-  }, [model, floorName, floorNumber, seatPrefix, defaultZone, createMissing, building?.id, isExcelMapOpen]);
+  }, [model, floorName, floorNumber, seatPrefix, defaultZone, createMissing, skipOccupied, mode, floor?.id, building?.id, isExcelMapOpen]);
 
   const loadBuffer = async (buf: ArrayBuffer, name: string) => {
     setBusy(true);
@@ -201,20 +211,28 @@ export const ExcelMapModal: React.FC = () => {
 
   const createFloor = async () => {
     if (!model) return;
-    if (past.length > 0 && !window.confirm('The floor you are viewing has unsaved layout edits. Opening the new floor discards them. Continue?')) return;
+    if (mode === 'create' && past.length > 0 && !window.confirm('The floor you are viewing has unsaved layout edits. Opening the new floor discards them. Continue?')) return;
+    if (
+      mode === 'update' &&
+      !window.confirm(
+        'Apply the map to "' + (floor?.name || 'this floor') + '"? ' + (check?.summary?.assign || 0) + ' seats get a program, ' +
+          (check?.summary?.clear || 0) + ' are cleared and ' + (check?.summary?.block || 0) + ' are blocked. A restore point is saved first.'
+      )
+    )
+      return;
     setCreating(true);
     try {
-      const res = await fetch('/api/import/floor-map', {
+      const res = await fetch(mode === 'update' ? '/api/import/floor-map/apply' : '/api/import/floor-map', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'COMMIT', buildingId: building?.id, floorName, floorNumber, seatPrefix, defaultZone, createMissingPrograms: createMissing, model, userRole: activeRole }),
+        body: JSON.stringify({ action: 'COMMIT', buildingId: building?.id, floorId: floor?.id, floorName, floorNumber, seatPrefix, defaultZone, createMissingPrograms: createMissing, skipOccupied, model, userRole: activeRole }),
       });
       const data = await res.json();
       if (!data.success) {
         setCheck({ ok: false, errors: data.errors || [data.error || 'Import failed'], warnings: [] });
         return;
       }
-      await loadFloorData(data.floorId);
+      await loadFloorData(data.floorId, undefined, mode === 'update' ? { keepLayout: true } : undefined);
       setModel(null);
       setCheck(null);
       setFileName('');
@@ -231,7 +249,7 @@ export const ExcelMapModal: React.FC = () => {
 
   const notes: string[] = [...(model?.warnings || []), ...(check?.warnings || [])];
   const errors: string[] = check?.errors || [];
-  const canCreate = !!model && !!check?.ok && !creating && model.seats.length > 0;
+  const canCreate = !!model && !!check?.ok && !creating && model.seats.length > 0 && (mode === 'create' || !!floor);
   const sel = model && selected?.kind === 'seat' ? model.seats[selected.index] : null;
   const selRoom = model && selected?.kind === 'room' ? model.rooms[selected.index] : null;
   const toolBtn = (t: MapTool, label: string, icon: React.ReactNode) => (
@@ -286,21 +304,46 @@ export const ExcelMapModal: React.FC = () => {
             </section>
 
             <section className="space-y-2">
-              <div className="font-bold text-slate-100">2. New floor</div>
-              <label className="block space-y-1">
-                <span className="text-slate-400">Floor name</span>
-                <input className={inputCls} value={floorName} onChange={(e) => setFloorName(e.target.value)} />
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block space-y-1">
-                  <span className="text-slate-400">Floor number</span>
-                  <input className={inputCls} type="number" value={floorNumber} onChange={(e) => setFloorNumber(parseInt(e.target.value || '0', 10))} />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-slate-400">Default zone</span>
-                  <input className={inputCls} value={defaultZone} maxLength={4} onChange={(e) => setDefaultZone(e.target.value.toUpperCase())} />
-                </label>
+              <div className="font-bold text-slate-100">2. What to do with the map</div>
+              <div className="grid grid-cols-2 gap-1 p-0.5 rounded-md bg-slate-800 border border-slate-700">
+                {(['create', 'update'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className={'px-2 py-1.5 rounded text-[11px] font-semibold ' + (mode === m ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700')}
+                  >
+                    {m === 'create' ? 'Create new floor' : 'Update this floor'}
+                  </button>
+                ))}
               </div>
+              {mode === 'update' ? (
+                <>
+                  <div className="text-slate-400">
+                    Matches each seat number in the map to a seat on <b className="text-slate-200">{floor?.name || 'the open floor'}</b> and applies the map's colours: program, vacant or non-usable. Seat positions never change.
+                  </div>
+                  <label className="block space-y-1">
+                    <span className="text-slate-400">Default zone (for plain numbers like 12)</span>
+                    <input className={inputCls} value={defaultZone} maxLength={4} onChange={(e) => setDefaultZone(e.target.value.toUpperCase())} />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label className="block space-y-1">
+                    <span className="text-slate-400">Floor name</span>
+                    <input className={inputCls} value={floorName} onChange={(e) => setFloorName(e.target.value)} />
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block space-y-1">
+                      <span className="text-slate-400">Floor number</span>
+                      <input className={inputCls} type="number" value={floorNumber} onChange={(e) => setFloorNumber(parseInt(e.target.value || '0', 10))} />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-slate-400">Default zone</span>
+                      <input className={inputCls} value={defaultZone} maxLength={4} onChange={(e) => setDefaultZone(e.target.value.toUpperCase())} />
+                    </label>
+                  </div>
+                </>
+              )}
               <label className="block space-y-1">
                 <span className="text-slate-400">Seat ID prefix (seat A-001 becomes {seatPrefix || 'PREFIX'}-A-001)</span>
                 <input className={inputCls} value={seatPrefix} onChange={(e) => setSeatPrefix(e.target.value.toUpperCase())} />
@@ -309,6 +352,12 @@ export const ExcelMapModal: React.FC = () => {
                 <input type="checkbox" checked={createMissing} onChange={(e) => setCreateMissing(e.target.checked)} />
                 Create programs that do not exist yet
               </label>
+              {mode === 'update' && (
+                <label className="flex items-start gap-2 text-slate-300">
+                  <input className="mt-0.5" type="checkbox" checked={skipOccupied} onChange={(e) => setSkipOccupied(e.target.checked)} />
+                  Leave seats that have an employee assigned as they are
+                </label>
+              )}
             </section>
 
             <section className="space-y-1">
@@ -431,16 +480,27 @@ export const ExcelMapModal: React.FC = () => {
             {model && check?.ok && (
               <div className="flex gap-1.5 text-emerald-300">
                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                {mode === 'update' ? (
+                  <>
+                    Ready: {check.summary?.matched} of {check.summary?.mapSeats} map seats match this floor. {check.summary?.assign} get a program, {check.summary?.clear} are cleared, {check.summary?.block} are blocked, {check.summary?.unchanged} already match
+                    {check.summary?.occupied ? ', ' + check.summary.occupied + ' with an employee are left alone' : ''}.
+                    {check.summary?.newPrograms?.length ? ' New programs: ' + check.summary.newPrograms.map((p: any) => p.name).join(', ') + '.' : ''}
+                  </>
+                ) : (
+                  <>
                 Ready: {check.summary?.seats} seats in zones {check.summary?.zones?.join(', ')}
                 {check.summary?.newPrograms?.length ? '; new programs: ' + check.summary.newPrograms.map((p: any) => p.name).join(', ') : ''}. Example ID: {check.summary?.sampleSeatIds?.[0]}
-              </div>
+              
+                  </>
+                )}
+</div>
             )}
           </div>
           <button onClick={() => setExcelMapOpen(false)} className="px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold">
             Cancel
           </button>
           <button onClick={createFloor} disabled={!canCreate} className="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed">
-            {creating ? 'Creating...' : 'Create floor from this map'}
+            {creating ? (mode === 'update' ? 'Updating...' : 'Creating...') : mode === 'update' ? 'Apply colours to this floor' : 'Create floor from this map'}
           </button>
         </div>
       </div>

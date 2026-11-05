@@ -44,7 +44,10 @@ How the workbook is read:
 - **A merged, bordered block is a room** (meeting room, pantry, lift). Do not merge seat cells.
 - The map sheet is the one named like *Floor Plan*; the `Legend` sheet has the columns Swatch, Hex, Meaning, Category, Program code.
 
-In the app you can look at the map as HTML, fix categories and seat numbers (Select / Paint / Erase), download the result as Excel or a standalone HTML page, and create a **new floor** from it. Seat A-001 becomes `<prefix>-A-001`. Existing floors are never changed by this import.
+In the app you can look at the map as HTML, fix categories and seat numbers (Select / Paint / Erase), download the result as Excel or a standalone HTML page, and either:
+
+- **Create a new floor** from it. Seat A-001 becomes `<prefix>-A-001`.
+- **Update this floor**: each seat number in the map is matched to the same seat on the open floor (`A-001` becomes `<this floor's prefix>-A-001`) and the map's colours are applied. Program colours assign the seat to that program, Vacant clears it, Non-usable blocks it. Seat positions never change. Seats that have an employee assigned are left alone unless you untick that option. Seats missing from the map are untouched. A restore point named "Before Excel colour update" is saved first (Version Manager), and the change is written to the audit log.
 
 Try it: press **Use sample** in the dialog, or run `npm run sample:excel` to write `samples/Sample-Floor-Plan.xlsx` and `samples/Sample-Floor-Plan.html`. `npm run check:excel-map` checks that a workbook survives write, read and compare.
 

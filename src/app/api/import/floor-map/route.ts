@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { captureFloorSnapshot } from '@/lib/floorSnapshot';
 import { resolveSeatIds } from '@/lib/excelMap/ids';
-import { SUPPORT_PROGRAM } from '@/lib/excelMap/palette';
+import { ProgramNeed, resolveLegendPrograms } from '@/lib/excelMap/programs';
 import { validateModel } from '@/lib/excelMap/validate';
 import { FloorMapModel, LegendEntry } from '@/lib/excelMap/types';
 
@@ -14,15 +14,6 @@ const MARGIN = 80;
 const SQFT_PER_CELL = 9;
 const ZONE_COLORS = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#06b6d4', '#ec4899', '#84cc16', '#f43f5e'];
 const SHIFT = '09:00 - 18:00';
-
-interface ProgramNeed {
-  entry: LegendEntry;
-  code: string;
-  name: string;
-  seats: number;
-}
-
-const codeFrom = (text: string) => text.replace(/[^A-Za-z0-9]/g, '').slice(0, 5).toUpperCase() || 'PRG';
 
 /** Everything the import would do, worked out without touching the database. */
 async function buildPlan(body: any) {
@@ -69,50 +60,9 @@ async function buildPlan(body: any) {
   }
 
   // Programs the map needs (program and support entries that are actually used)
-  const used: Record<string, number> = {};
-  model.seats.forEach((s) => (used[s.legendKey] = (used[s.legendKey] || 0) + 1));
-  const known = await prisma.program.findMany();
-  const byCode = new Map(known.map((p) => [p.code.toLowerCase(), p]));
-  const byName = new Map(known.map((p) => [p.name.toLowerCase(), p]));
-  const needs: ProgramNeed[] = [];
-  const programFor: Record<string, { id?: string; code: string; name: string; create: boolean }> = {};
-  const createdCodes = new Set<string>();
-  const createdNames = new Set<string>();
-
-  for (const entry of model.legend) {
-    if (!used[entry.key] || (entry.kind !== 'program' && entry.kind !== 'support')) continue;
-    const wantCode = (entry.programCode || (entry.kind === 'support' ? SUPPORT_PROGRAM.code : codeFrom(entry.label))).trim();
-    const wantName =
-      entry.kind === 'support' && wantCode.toUpperCase() === SUPPORT_PROGRAM.code ? SUPPORT_PROGRAM.name : entry.label;
-    const found = byCode.get(wantCode.toLowerCase()) || byName.get(wantName.toLowerCase()) || byName.get(wantCode.toLowerCase());
-    if (found) {
-      programFor[entry.key] = { id: found.id, code: found.code, name: found.name, create: false };
-      continue;
-    }
-    let code = wantCode.toUpperCase();
-    let name = wantName;
-    // Two legend entries can share one new program (e.g. several support colours)
-    const sameNew = Object.values(programFor).find((p) => p.create && (p.code === code || p.name.toLowerCase() === name.toLowerCase()));
-    if (sameNew) {
-      programFor[entry.key] = sameNew;
-      continue;
-    }
-    while (createdCodes.has(code)) code += '2';
-    while (createdNames.has(name.toLowerCase())) name += ' 2';
-    createdCodes.add(code);
-    createdNames.add(name.toLowerCase());
-    programFor[entry.key] = { code, name, create: true };
-    needs.push({ entry, code, name, seats: 0 });
-  }
-  needs.forEach((n) => {
-    n.seats = model.legend.reduce((sum, e) => (programFor[e.key] === programFor[n.entry.key] ? sum + (used[e.key] || 0) : sum), 0);
-  });
-  if (needs.length && !body.createMissingPrograms) {
-    errors.push(
-      needs.length + (needs.length === 1 ? ' program in the map does' : ' programs in the map do') + ' not exist yet: ' + needs.map((n) => n.name).join(', ') +
-        '. Tick "Create missing programs" or add them first.'
-    );
-  }
+  const prog = await resolveLegendPrograms(model, !!body.createMissingPrograms);
+  errors.push(...prog.errors);
+  const { needs, programFor, used } = prog;
 
   return { errors, warnings, model, plan: { building, floorName, floorNumber, prefix, resolved, needs, programFor, used } };
 }
