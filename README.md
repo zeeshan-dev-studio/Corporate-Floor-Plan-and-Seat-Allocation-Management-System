@@ -8,7 +8,7 @@ An enterprise-grade, high-performance web application designed for corporate and
 
 1. **Decoupled Architecture**:
    - **Layer A (Physical Architecture)**: Complete corporate floor layout with walls, glass partitions, 4 passenger elevators, fire emergency stairs, executive boardroom, 120-seat townhall auditorium, training center, cafeteria/pantry, MDF server room with 42U racks, meeting cabins, and reception with turnstiles.
-   - **Layer B (Business Allocation & Capacity)**: Multi-program allocations (Amazon, McAfee, T-Mobile, Wayfair, Healthcare Global). Seat allocation and seat blocking are strictly orthogonal. De-allocation preserves physical geometry.
+   - **Layer B (Business Allocation & Capacity)**: Multi-program allocations (Rubber Duck Logistics, Sneaky Squirrel Security, Llama Telecom, Wobbly Table Retail, Happy Hippo Health). Seat allocation and seat blocking are strictly orthogonal. De-allocation preserves physical geometry.
 2. **Vector SVG CAD Canvas Engine**:
    - Pan & zoom (0.15x to 4.0x) with mouse wheel zoom centering at cursor and spacebar pan.
    - Precision CAD rulers, 20px/100px grid, and snap-to-grid.
@@ -32,6 +32,10 @@ An enterprise-grade, high-performance web application designed for corporate and
    - Granular role switching (Administrator, Facility Manager, Capacity Planner, Program Manager, Viewer).
 
 ---
+
+## Designing a Floor
+
+Use the tools at the top-left of the canvas to draw walls, glass partitions, rooms (rectangle or any polygon, including L/T/U shapes) and workstations. A workstation is a box that fills with seats automatically. Objects can be moved, resized, rotated and have their corners edited, and seats travel with their workstation. Press Save to store the layout. The full guide is in the app at `/features` (the **Guide** button in the top bar).
 
 ## Excel Floor Maps
 

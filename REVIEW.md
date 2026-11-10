@@ -76,7 +76,7 @@ Rows with Program "Unallocated" (every vacant seat in an export) fail as "Unknow
 - Fix: treat "Unallocated" and blank the same way, explicitly; accept both header names; map headers by column number; re-validate on commit; accept only `.xlsx`.
 
 ### 11. Excel export has wrong or missing data — Fixed
-- The Zone column is guessed from the bay code, so every Y-bay seat shows "Zone BAY".
+- The Zone column is guessed from the bay code, so every bench seat shows "Zone BAY".
 - The "Allocation History" sheet is always empty, because the store's `auditLogs` is never filled.
 - Area, surplus and utilization are written as text, so they can't be summed or sorted.
 - Where: [excel.ts:75](src/lib/export/excel.ts#L75), [:135-136](src/lib/export/excel.ts#L135), [:176](src/lib/export/excel.ts#L176), [useFloorPlanStore.ts:186](src/store/useFloorPlanStore.ts#L186), [ExportModal.tsx:56](src/components/modals/ExportModal.tsx#L56)
@@ -97,7 +97,7 @@ React registers wheel listeners as passive, so `preventDefault()` in `handleWhee
 - Where: [FloorPlanCanvas.tsx:162-164](src/components/canvas/FloorPlanCanvas.tsx#L162), [:285](src/components/canvas/FloorPlanCanvas.tsx#L285)
 - Fix: add a native `wheel` listener with `{ passive: false }` in a `useEffect`.
 
-### 15. Most layer controls do nothing
+### 15. Most layer controls do nothing — **Fixed** (floor designer rework)
 The canvas groups objects by *type* and checks a layer toggle chosen per group, not the `layer` stored on the object:
 - The Walls, Glass, Dimensions and Allocation toggles are never read.
 - Fire stairs (layer "safety") follow the Facilities toggle, and the service core (layer "architecture") follows Rooms.
@@ -105,12 +105,12 @@ The canvas groups objects by *type* and checks a layer toggle chosen per group, 
 - Where: [FloorPlanCanvas.tsx:370-515](src/components/canvas/FloorPlanCanvas.tsx#L370), [ObjectLibrarySidebar.tsx:416-452](src/components/library/ObjectLibrarySidebar.tsx#L416)
 - Fix: render and filter by `obj.layer`, honour visible/locked/opacity, and add an opacity slider.
 
-### 16. Objects can't be dragged on the canvas
+### 16. Objects can't be dragged on the canvas — **Fixed** (floor designer rework)
 The drag handlers exist, but `setDraggingObjectId` is only ever called with `null`, so only the X/Y fields can move objects. If it were wired up as written, every mouse move would push a deep copy of all seats and objects into undo history.
 - Where: [FloorPlanCanvas.tsx:235-246](src/components/canvas/FloorPlanCanvas.tsx#L235), [:264-266](src/components/canvas/FloorPlanCanvas.tsx#L264), [useFloorPlanStore.ts:434-439](src/store/useFloorPlanStore.ts#L434)
 - Fix: start the drag on object mousedown and push history once when the drag starts.
 
-### 17. Workstations and seats aren't connected
+### 17. Workstations and seats aren't connected — **Fixed** (floor designer rework)
 Placing a bench from the library creates a desk with no seats, and the UI has no way to add seats. Moving a bay leaves its seats behind, because seats have absolute coordinates. Deleting a bay also leaves its seats (and now that deletes are saved, those seats lose their bay link).
 - Where: [ObjectLibrarySidebar.tsx:291-319](src/components/library/ObjectLibrarySidebar.tsx#L291), [floorplan.ts:142-144](src/types/floorplan.ts#L142)
 - Fix: generate seats from the template's capacity when placing a bay, and move and delete seats together with their bay.
