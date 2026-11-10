@@ -12,7 +12,7 @@ const TOOLS: Array<{ id: ToolMode; label: string; key: string; icon: React.React
   { id: 'glass', label: 'Glass partition', key: 'G', icon: <PanelTop className="w-4 h-4" />, edit: true, hint: 'Drag from one end of the glass partition to the other.' },
   { id: 'room', label: 'Room (rectangle)', key: 'R', icon: <Square className="w-4 h-4" />, edit: true, hint: 'Drag a box to draw a rectangular room. Change it to an L, T or U shape later in the properties panel.' },
   { id: 'polyroom', label: 'Room (any shape)', key: 'P', icon: <Pentagon className="w-4 h-4" />, edit: true, hint: 'Click each corner of the room. Double-click, press Enter or click the first point to finish. Backspace removes the last corner.' },
-  { id: 'workstation', label: 'Workstation', key: 'B', icon: <LayoutGrid className="w-4 h-4" />, edit: true, hint: 'Drag a box: seats fill it automatically. Adjust rows, columns and shape afterwards.' },
+  { id: 'workstation', label: 'Workstation', key: 'B', icon: <LayoutGrid className="w-4 h-4" />, edit: true, hint: 'Drag an area: it fills with benches of up to 8 seats a side, two rows facing each other, with aisles between. A small box gives one bench. Adjust rows, columns and shape afterwards.' },
   { id: 'seat', label: 'Single seat', key: 'S', icon: <CircleDot className="w-4 h-4" />, edit: true, hint: 'Click to drop a single loose seat. Click as many times as you like, press Esc to stop.' },
 ];
 

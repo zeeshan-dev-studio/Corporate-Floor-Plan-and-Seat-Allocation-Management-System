@@ -215,7 +215,7 @@ export default function FeaturesPage() {
                   <tr><Td strong>Glass partition</Td><Td><Key>G</Key></Td><Td>Same as a wall, drawn as glass.</Td></tr>
                   <tr><Td strong>Room (rectangle)</Td><Td><Key>R</Key></Td><Td>Drag a box. Change its shape later in the right-hand panel.</Td></tr>
                   <tr><Td strong>Room (any shape)</Td><Td><Key>P</Key></Td><Td>Click each corner; double-click, <Key>Enter</Key> or click the first point to finish.</Td></tr>
-                  <tr><Td strong>Workstation</Td><Td><Key>B</Key></Td><Td>Drag a box of any size; seats fill it.</Td></tr>
+                  <tr><Td strong>Workstation</Td><Td><Key>B</Key></Td><Td>Drag an area: it fills with BPO-style benches (up to 8 seats a side, two rows facing each other, aisles between). A small box gives a single bench.</Td></tr>
                   <tr><Td strong>Single seat</Td><Td><Key>S</Key></Td><Td>Click to drop a loose seat. Click again for more, <Key>Esc</Key> to stop.</Td></tr>
                 </tbody>
               </table>
@@ -252,7 +252,7 @@ export default function FeaturesPage() {
             <SeatDemos />
             <ul className="list-disc pl-5 space-y-1.5">
               <li><b>BPO-style defaults:</b> seats sit 4.5 ft apart in two rows either side of a divider screen, in benches of 6, 8, 10, 12 or 16 seats. Leave about 5 ft between benches and 6 ft on main aisles.</li>
-              <li><b>Any size:</b> the library has single desks, pairs, clusters, benches, wall rows and tables. For anything else, draw a box with the Workstation tool.</li>
+              <li><b>Any size:</b> the library has single desks, pairs, clusters, benches, wall rows and tables. For anything else, drag an area with the Workstation tool.</li>
               <li><b>Any shape:</b> rectangle, L, T, U, cut corner or round. Seats are only placed where the shape has room; you are told if it cannot hold them all.</li>
               <li><b>Layout:</b> choose the number of seats and rows, whether seats are in rows or around the edge (round tables), and whether chairs face each other or the same way.</li>
               <li><b>Seat types:</b> standard, hot desk, team lead, ops manager or accessible. Non-standard seats show a small badge.</li>

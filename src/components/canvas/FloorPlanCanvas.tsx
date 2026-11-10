@@ -11,8 +11,7 @@ import { DrawToolbar } from './DrawToolbar';
 import { FloorObjectDTO, LayerId, Point, ToolMode } from '@/types/floorplan';
 import {
   LAYER_ORDER,
-  SEAT_CELL_H,
-  SEAT_CELL_W,
+  tileBenches,
   layerOf,
   objectPoints,
   polygonToBox,
@@ -529,28 +528,33 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
         useFloorPlanStore.getState().setActiveTool('select');
       } else if (g.tool === 'workstation') {
         if (width < 30 || height < 30) return;
-        const cols = Math.max(1, Math.round(width / SEAT_CELL_W));
-        const rows = Math.max(1, Math.round(height / SEAT_CELL_H));
-        st.addBay({
-          ...base,
-          type: 'bay',
-          subType: 'box',
-          layer: 'workstations',
-          x,
-          y,
-          width,
-          height,
-          geometry: { shape: 'rect' },
-          properties: {
-            label: 'WS-01',
-            tableType: 'Workstation',
-            capacity: rows * cols,
-            seatRows: rows,
-            seatCols: cols,
-            arrangement: 'grid',
-            seatFacing: 'inward',
-          },
-        });
+        // A big area becomes a run of benches with aisles, like a real BPO floor
+        const tiles = tileBenches(x, y, width, height);
+        const seatTotal = tiles.reduce((n, t) => n + t.rows * t.cols, 0);
+        if (seatTotal > 150 && !window.confirm(`This will add ${tiles.length} benches with ${seatTotal} seats. Continue?`)) return;
+        st.addBays(
+          tiles.map((t, i) => ({
+            ...base,
+            id: i === 0 ? base.id : newTempId('obj'),
+            type: 'bay',
+            subType: 'box',
+            layer: 'workstations',
+            x: t.x,
+            y: t.y,
+            width: t.width,
+            height: t.height,
+            geometry: { shape: 'rect' },
+            properties: {
+              label: 'WS-01',
+              tableType: 'Workstation',
+              capacity: t.rows * t.cols,
+              seatRows: t.rows,
+              seatCols: t.cols,
+              arrangement: 'grid',
+              seatFacing: 'inward',
+            },
+          }))
+        );
         useFloorPlanStore.getState().setActiveTool('select');
       }
     };
@@ -790,13 +794,16 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({ svgRef: extern
     const y = Math.min(a.y, b.y);
     const w = Math.abs(b.x - a.x);
     const h = Math.abs(b.y - a.y);
-    const cols = Math.max(1, Math.round(w / SEAT_CELL_W));
-    const rows = Math.max(1, Math.round(h / SEAT_CELL_H));
+    const tiles = tool === 'workstation' ? tileBenches(x, y, w, h) : [];
+    const seatTotal = tiles.reduce((n, t) => n + t.rows * t.cols, 0);
     return (
       <g>
         <rect x={x} y={y} width={w} height={h} fill="rgba(2,132,199,0.15)" stroke={previewStroke} strokeWidth={1.5} strokeDasharray="6 3" />
+        {tiles.map((t, i) => (
+          <rect key={i} x={t.x} y={t.y} width={t.width} height={t.height} fill="rgba(255,255,255,0.7)" stroke="#075985" strokeWidth={1} />
+        ))}
         <text x={x + w / 2} y={y + h / 2} textAnchor="middle" dominantBaseline="central" fontSize={12 / zoom + 2} fill="#0c4a6e">
-          {tool === 'workstation' ? `${rows * cols} seats  (${(w / 10).toFixed(1)} x ${(h / 10).toFixed(1)} ft)` : `${(w / 10).toFixed(1)} x ${(h / 10).toFixed(1)} ft`}
+          {tool === 'workstation' ? `${seatTotal} seats${tiles.length > 1 ? ` in ${tiles.length} benches` : ''}  (${(w / 10).toFixed(1)} x ${(h / 10).toFixed(1)} ft)` : `${(w / 10).toFixed(1)} x ${(h / 10).toFixed(1)} ft`}
         </text>
       </g>
     );

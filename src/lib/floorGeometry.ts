@@ -377,3 +377,42 @@ export function blankSeat(seatId: string, floorId: string, slot: SeatSlot, zoneI
 }
 
 export const isDraftId = (id: string) => id.startsWith('temp-');
+
+export interface BenchTile {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rows: number;
+  cols: number;
+}
+
+/** Longest run of seats on one bench before an aisle is needed. */
+export const MAX_BENCH_COLS = 8;
+/** Gap between benches: 6 ft along a row, 5 ft between rows. */
+export const BENCH_AISLE_X = 60;
+export const BENCH_AISLE_Y = 50;
+export const MAX_TILES = 80;
+
+/**
+ * Fills a drawn area the way a BPO floor is laid out: benches of up to 8 seats a side, two rows
+ * facing each other (one row if the area is shallow), with aisles between benches. A small box
+ * gives a single bench; a large one gives as many benches as fit.
+ */
+export function tileBenches(x: number, y: number, w: number, h: number): BenchTile[] {
+  const rows = h < SEAT_CELL_H * 1.5 ? 1 : 2;
+  const depth = rows * SEAT_CELL_H;
+  const tiles: BenchTile[] = [];
+  for (let cy = y; cy + depth <= y + h + 1 && tiles.length < MAX_TILES; cy += depth + BENCH_AISLE_Y) {
+    for (let cx = x; tiles.length < MAX_TILES; ) {
+      const remaining = x + w - cx;
+      const cols = Math.min(MAX_BENCH_COLS, Math.floor((remaining + 1) / SEAT_CELL_W));
+      if (cols < 1) break;
+      tiles.push({ x: cx, y: cy, width: cols * SEAT_CELL_W, height: depth, rows, cols });
+      cx += cols * SEAT_CELL_W + BENCH_AISLE_X;
+    }
+  }
+  // Too small for even one bench: still make the smallest one so the click is not wasted
+  if (tiles.length === 0) tiles.push({ x, y, width: SEAT_CELL_W, height: SEAT_CELL_H, rows: 1, cols: 1 });
+  return tiles;
+}

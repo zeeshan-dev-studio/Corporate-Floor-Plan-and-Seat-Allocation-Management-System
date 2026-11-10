@@ -166,6 +166,8 @@ export interface FloorPlanStore {
   addObject: (obj: FloorObjectDTO) => void;
   /** Add a workstation together with its seats. */
   addBay: (obj: FloorObjectDTO) => void;
+  /** Several workstations in one undo step. */
+  addBays: (objs: FloorObjectDTO[]) => void;
   deleteSelectedObjects: () => void;
   deleteSelection: () => void;
   duplicateSelection: () => void;
@@ -611,22 +613,28 @@ export const useFloorPlanStore = create<FloorPlanStore>((set, get) => ({
     }));
   },
 
-  addBay: (obj) => {
+  addBay: (obj) => get().addBays([obj]),
+
+  addBays: (list) => {
     const st = get();
-    if (!st.floor) return;
+    if (!st.floor || list.length === 0) return;
     st.pushHistory();
-    const label = uniqueBayLabel(obj.properties?.label || 'WS-01', st.objects);
-    const bay: FloorObjectDTO = { ...obj, properties: { ...obj.properties, label } };
-    const slots = seatSlots(bay, layoutSpecOf(bay));
     const zone = defaultZoneOf(st.seats, st.zones);
-    const ids = nextSeatIds(st.seats, seatPrefixFor(st.seats, st.building?.code, st.floor.floorNumber), zone?.code || 'A', slots.length);
-    const fresh = slots.map((slot, i) => blankSeat(ids[i], st.floor!.id, slot, zone?.id || null, bay.id, label));
-    set({
-      objects: [...st.objects, { ...bay, properties: { ...bay.properties, capacity: slots.length } }],
-      seats: [...st.seats, ...fresh],
-      selectedObjectIds: [bay.id],
-      selectedSeatIds: [],
-    });
+    const prefix = seatPrefixFor(st.seats, st.building?.code, st.floor.floorNumber);
+    let objects = st.objects;
+    let seats = st.seats;
+    const added: string[] = [];
+    for (const obj of list) {
+      const label = uniqueBayLabel(obj.properties?.label || 'WS-01', objects);
+      const bay: FloorObjectDTO = { ...obj, properties: { ...obj.properties, label } };
+      const slots = seatSlots(bay, layoutSpecOf(bay));
+      const ids = nextSeatIds(seats, prefix, zone?.code || 'A', slots.length);
+      const fresh = slots.map((slot, i) => blankSeat(ids[i], st.floor!.id, slot, zone?.id || null, bay.id, label));
+      objects = [...objects, { ...bay, properties: { ...bay.properties, capacity: slots.length } }];
+      seats = [...seats, ...fresh];
+      added.push(bay.id);
+    }
+    set({ objects, seats, selectedObjectIds: added, selectedSeatIds: [] });
   },
 
   deleteSelection: () => {
