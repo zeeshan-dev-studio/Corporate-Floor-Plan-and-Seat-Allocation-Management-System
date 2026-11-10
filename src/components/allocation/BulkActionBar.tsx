@@ -78,7 +78,7 @@ export const BulkActionBar: React.FC = () => {
   };
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl p-3 px-5 backdrop-blur-xl z-40 flex items-center gap-4 text-white animate-in fade-in slide-in-from-bottom-4 duration-200 select-none">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl p-3 px-5 backdrop-blur-xl z-40 flex items-center gap-4 text-slate-50 animate-in fade-in slide-in-from-bottom-4 duration-200 select-none">
       {/* Selection Counter & Breakdown */}
       <div className="flex items-center gap-3 border-r border-slate-700 pr-4">
         <div className="w-8 h-8 rounded-full bg-sky-500/20 text-sky-400 font-bold flex items-center justify-center text-sm border border-sky-500/30">

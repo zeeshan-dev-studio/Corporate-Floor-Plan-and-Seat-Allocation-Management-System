@@ -120,7 +120,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
               <Download className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Export Floor Plan & Data</h3>
+              <h3 className="font-bold text-base text-slate-50">Export Floor Plan & Data</h3>
               <p className="text-xs text-slate-400">
                 Generate high-resolution vector PDF, Excel workbook, SVG, or PNG
               </p>
@@ -128,7 +128,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
           </div>
           <button
             onClick={() => setExportModalOpen(false)}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="p-1 text-slate-400 hover:text-slate-50 rounded-lg hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -156,7 +156,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
                     onClick={() => setExportFormat(fmt.id as any)}
                     className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
                       isSelected
-                        ? 'bg-sky-500/20 border-sky-500 text-white shadow-md shadow-sky-500/10'
+                        ? 'bg-sky-500/20 border-sky-500 text-slate-50 shadow-md shadow-sky-500/10'
                         : 'bg-slate-800/60 border-slate-700/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                     }`}
                   >
@@ -181,11 +181,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
                   onClick={() => setPlanType('operational')}
                   className={`p-3 rounded-xl border text-left transition-all ${
                     planType === 'operational'
-                      ? 'bg-sky-500/20 border-sky-500 text-white'
+                      ? 'bg-sky-500/20 border-sky-500 text-slate-50'
                       : 'bg-slate-800/60 border-slate-700 text-slate-400'
                   }`}
                 >
-                  <div className="font-bold text-xs text-white">Operational Allocation Plan</div>
+                  <div className="font-bold text-xs text-slate-50">Operational Allocation Plan</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">
                     Includes program color highlights, vacancy, blocked seats, legends & capacity tags
                   </div>
@@ -196,11 +196,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
                   onClick={() => setPlanType('architectural')}
                   className={`p-3 rounded-xl border text-left transition-all ${
                     planType === 'architectural'
-                      ? 'bg-sky-500/20 border-sky-500 text-white'
+                      ? 'bg-sky-500/20 border-sky-500 text-slate-50'
                       : 'bg-slate-800/60 border-slate-700 text-slate-400'
                   }`}
                 >
-                  <div className="font-bold text-xs text-white">Original Architectural Plan</div>
+                  <div className="font-bold text-xs text-slate-50">Original Architectural Plan</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">
                     Clean CAD blueprint: walls, rooms, furniture, facilities. No business allocation markup.
                   </div>
@@ -223,7 +223,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
                   <select
                     value={paperSize}
                     onChange={(e) => setPaperSize(e.target.value as any)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white font-mono"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-50 font-mono"
                   >
                     <option value="a4">A4 (297 × 210 mm) - Standard Desk</option>
                     <option value="a3">A3 (420 × 297 mm) - Facility Standard</option>
@@ -236,7 +236,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ svgRef }) => {
                   <select
                     value={orientation}
                     onChange={(e) => setOrientation(e.target.value as any)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white font-mono"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-50 font-mono"
                   >
                     <option value="landscape">Landscape (Recommended)</option>
                     <option value="portrait">Portrait</option>

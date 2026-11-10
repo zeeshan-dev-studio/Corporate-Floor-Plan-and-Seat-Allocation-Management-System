@@ -63,7 +63,7 @@ export const BulkAssignModal: React.FC = () => {
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Bulk Assign Program</h3>
+              <h3 className="font-bold text-base text-slate-50">Bulk Assign Program</h3>
               <p className="text-xs text-slate-400">
                 Assign {selectedSeatIds.length} selected seats to a business program
               </p>
@@ -71,7 +71,7 @@ export const BulkAssignModal: React.FC = () => {
           </div>
           <button
             onClick={() => setBulkAssignOpen(false)}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="p-1 text-slate-400 hover:text-slate-50 rounded-lg hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -87,7 +87,7 @@ export const BulkAssignModal: React.FC = () => {
             <select
               value={programId}
               onChange={(e) => setSelectedProgramId(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 font-medium"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-50 focus:outline-none focus:border-sky-500 font-medium"
               required
             >
               {programs.map((p) => (
@@ -109,7 +109,7 @@ export const BulkAssignModal: React.FC = () => {
                 type="date"
                 value={effectiveDate}
                 onChange={(e) => setEffectiveDate(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500 font-mono"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-50 focus:outline-none focus:border-sky-500 font-mono"
               />
             </div>
             <div>
@@ -120,7 +120,7 @@ export const BulkAssignModal: React.FC = () => {
               <select
                 value={shift}
                 onChange={(e) => setShift(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-50 focus:outline-none focus:border-sky-500"
               >
                 <option value="09:00 - 18:00">General (09:00 - 18:00)</option>
                 <option value="08:00 - 17:00">Morning (08:00 - 17:00)</option>
@@ -143,7 +143,7 @@ export const BulkAssignModal: React.FC = () => {
                   key={name}
                   className="bg-slate-800/80 px-2.5 py-1 rounded-md text-[11px] font-mono text-slate-300 border border-slate-700/60"
                 >
-                  {name}: <span className="font-bold text-white">{count}</span>
+                  {name}: <span className="font-bold text-slate-50">{count}</span>
                 </div>
               ))}
             </div>

@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #181b22;
-  --foreground: #f8fafc;
+  --background: #ffffff;
+  --foreground: #020617;
 }
 
 body {
@@ -14,21 +14,21 @@ body {
   overflow: hidden;
 }
 
-/* Custom CAD dark scrollbars */
+/* Custom CAD light scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #e2e8f0;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #64748b;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #334155;
 }

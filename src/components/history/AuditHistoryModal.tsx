@@ -57,7 +57,7 @@ export const AuditHistoryModal: React.FC = () => {
               <History className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">System Audit Trail & Compliance</h3>
+              <h3 className="font-bold text-base text-slate-50">System Audit Trail & Compliance</h3>
               <p className="text-xs text-slate-400">
                 Immutable chronological log of all floor plan, allocation, and blocking operations
               </p>
@@ -65,7 +65,7 @@ export const AuditHistoryModal: React.FC = () => {
           </div>
           <button
             onClick={() => setAuditModalOpen(false)}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="p-1 text-slate-400 hover:text-slate-50 rounded-lg hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -80,7 +80,7 @@ export const AuditHistoryModal: React.FC = () => {
               placeholder="Search by User, Action, Reason, or Seat ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-50 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
 

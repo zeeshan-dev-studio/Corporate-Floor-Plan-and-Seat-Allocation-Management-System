@@ -269,7 +269,7 @@ export const ExcelMapModal: React.FC = () => {
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
             <div>
-              <div className="text-sm font-bold text-white">Excel Floor Map</div>
+              <div className="text-sm font-bold text-slate-50">Excel Floor Map</div>
               <div className="text-[11px] text-slate-400">Read a floor drawn in Excel, check and edit it here, then create the floor in the app.</div>
             </div>
           </div>

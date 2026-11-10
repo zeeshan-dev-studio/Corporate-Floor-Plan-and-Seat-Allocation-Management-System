@@ -100,7 +100,7 @@ export const VersionSnapshotModal: React.FC = () => {
               <Bookmark className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Floor Plan Snapshots & Versioning</h3>
+              <h3 className="font-bold text-base text-slate-50">Floor Plan Snapshots & Versioning</h3>
               <p className="text-xs text-slate-400">
                 Point-in-time immutable floor baselines, allocations, and restoration
               </p>
@@ -108,7 +108,7 @@ export const VersionSnapshotModal: React.FC = () => {
           </div>
           <button
             onClick={() => setVersionModalOpen(false)}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="p-1 text-slate-400 hover:text-slate-50 rounded-lg hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -121,7 +121,7 @@ export const VersionSnapshotModal: React.FC = () => {
             onSubmit={handleCreateSnapshot}
             className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3"
           >
-            <div className="font-bold text-sm text-white flex items-center gap-2">
+            <div className="font-bold text-sm text-slate-50 flex items-center gap-2">
               <Plus className="w-4 h-4 text-sky-400" />
               Capture New Floor Snapshot
             </div>
@@ -133,7 +133,7 @@ export const VersionSnapshotModal: React.FC = () => {
                   placeholder="e.g. v2.1 - Q4 Expansion Baseline"
                   value={versionName}
                   onChange={(e) => setVersionName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-medium"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-50 focus:outline-none focus:border-sky-500 font-medium"
                   required
                 />
               </div>
@@ -141,10 +141,10 @@ export const VersionSnapshotModal: React.FC = () => {
                 <label className="block text-[11px] text-slate-400 mb-1">Notes / Description</label>
                 <input
                   type="text"
-                  placeholder="e.g. Prepared for McAfee SOC migration"
+                  placeholder="e.g. Prepared for Squirrel SOC migration"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-50 focus:outline-none focus:border-sky-500"
                 />
               </div>
             </div>
@@ -176,7 +176,7 @@ export const VersionSnapshotModal: React.FC = () => {
                     className="bg-slate-800/50 border border-slate-700/80 rounded-xl p-3.5 flex items-center justify-between hover:border-slate-600 transition-colors"
                   >
                     <div>
-                      <div className="font-bold text-sm text-white flex items-center gap-2">
+                      <div className="font-bold text-sm text-slate-50 flex items-center gap-2">
                         <span>{ver.versionName}</span>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-700 text-slate-300">
                           {ver.createdBy}

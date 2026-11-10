@@ -44,7 +44,7 @@ export const BulkBlockModal: React.FC = () => {
               <Ban className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Bulk Block Seats</h3>
+              <h3 className="font-bold text-base text-slate-50">Bulk Block Seats</h3>
               <p className="text-xs text-slate-400">
                 Mark {selectedSeatIds.length} seats as blocked/unavailable
               </p>
@@ -52,7 +52,7 @@ export const BulkBlockModal: React.FC = () => {
           </div>
           <button
             onClick={() => setBulkBlockOpen(false)}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="p-1 text-slate-400 hover:text-slate-50 rounded-lg hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -67,7 +67,7 @@ export const BulkBlockModal: React.FC = () => {
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 font-medium"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-50 focus:outline-none focus:border-red-500 font-medium"
               required
             >
               <option value="Maintenance">Maintenance (Ergonomic / Electrical)</option>
@@ -90,7 +90,7 @@ export const BulkBlockModal: React.FC = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 font-mono"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-50 focus:outline-none focus:border-red-500 font-mono"
                 required
               />
             </div>
@@ -103,7 +103,7 @@ export const BulkBlockModal: React.FC = () => {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 font-mono"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-50 focus:outline-none focus:border-red-500 font-mono"
               />
             </div>
           </div>
@@ -118,7 +118,7 @@ export const BulkBlockModal: React.FC = () => {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Ticket #FAC-8921: Power strip replacement"
               rows={2}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-50 focus:outline-none focus:border-red-500"
             />
           </div>
 

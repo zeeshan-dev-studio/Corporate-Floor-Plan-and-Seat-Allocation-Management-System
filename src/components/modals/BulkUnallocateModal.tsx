@@ -31,7 +31,7 @@ export const BulkUnallocateModal: React.FC = () => {
               <UserMinus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Remove Seat Allocation</h3>
+              <h3 className="font-bold text-base text-slate-50">Remove Seat Allocation</h3>
               <p className="text-xs text-slate-400">
                 Clear business allocations for {selectedSeatIds.length} seats
               </p>
@@ -39,7 +39,7 @@ export const BulkUnallocateModal: React.FC = () => {
           </div>
           <button
             onClick={() => setBulkUnallocateOpen(false)}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="p-1 text-slate-400 hover:text-slate-50 rounded-lg hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -49,7 +49,7 @@ export const BulkUnallocateModal: React.FC = () => {
           <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-200 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-white">Physical Seats Will NOT Be Deleted</p>
+              <p className="font-semibold text-slate-50">Physical Seats Will NOT Be Deleted</p>
               <p className="mt-1 text-slate-300">
                 This operation removes program affiliations and employee assignments. The physical seats, workstation bays, and CAD coordinates remain unchanged on the floor plan.
               </p>

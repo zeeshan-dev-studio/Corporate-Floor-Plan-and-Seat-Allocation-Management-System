@@ -145,7 +145,7 @@ export const ExcelImportModal: React.FC = () => {
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Import Seat Allocations from Excel</h3>
+              <h3 className="font-bold text-base text-slate-50">Import Seat Allocations from Excel</h3>
               <p className="text-xs text-slate-400">
                 Upload .xlsx spreadsheet to batch assign programs, shifts, and employees
               </p>
@@ -153,7 +153,7 @@ export const ExcelImportModal: React.FC = () => {
           </div>
           <button
             onClick={() => setExcelImportOpen(false)}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="p-1 text-slate-400 hover:text-slate-50 rounded-lg hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -172,7 +172,7 @@ export const ExcelImportModal: React.FC = () => {
             />
             <label htmlFor="excel-file-input" className="cursor-pointer block">
               <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-              <div className="text-sm font-semibold text-white">
+              <div className="text-sm font-semibold text-slate-50">
                 {file ? file.name : 'Click to select Excel (.xlsx) file'}
               </div>
               <div className="text-xs text-slate-400 mt-1">
@@ -194,7 +194,7 @@ export const ExcelImportModal: React.FC = () => {
               <div className="grid grid-cols-4 gap-2 text-center text-xs">
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700">
                   <div className="text-slate-400">Total Rows</div>
-                  <div className="text-base font-bold text-white font-mono mt-0.5">
+                  <div className="text-base font-bold text-slate-50 font-mono mt-0.5">
                     {validationResult.summary.total}
                   </div>
                 </div>

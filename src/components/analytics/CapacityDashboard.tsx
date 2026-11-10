@@ -46,7 +46,7 @@ export const CapacityDashboard: React.FC = () => {
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-base text-white">Capacity & Utilization Analytics</h3>
+            <h3 className="font-bold text-base text-slate-50">Capacity & Utilization Analytics</h3>
             <p className="text-xs text-slate-400">
               {building?.name} • {floor.name}
             </p>
@@ -54,7 +54,7 @@ export const CapacityDashboard: React.FC = () => {
         </div>
         <button
           onClick={() => setAnalyticsDrawerOpen(false)}
-          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+          className="p-1.5 text-slate-400 hover:text-slate-50 rounded-lg hover:bg-slate-800"
         >
           <X className="w-5 h-5" />
         </button>
@@ -70,7 +70,7 @@ export const CapacityDashboard: React.FC = () => {
           type="date"
           value={asOfDate}
           onChange={(e) => setAsOfDate(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-1 text-xs text-white font-mono focus:outline-none focus:border-sky-500"
+          className="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-1 text-xs text-slate-50 font-mono focus:outline-none focus:border-sky-500"
         />
       </div>
 
@@ -84,7 +84,7 @@ export const CapacityDashboard: React.FC = () => {
           <div className="grid grid-cols-3 gap-2.5">
             <div className="bg-slate-800/60 border border-slate-700/80 p-3 rounded-xl">
               <div className="text-slate-400 text-[11px]">Total Physical Seats</div>
-              <div className="text-xl font-bold font-mono text-white mt-1">
+              <div className="text-xl font-bold font-mono text-slate-50 mt-1">
                 {totalSeats}
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">{floor.totalArea} sq ft</div>
@@ -170,7 +170,7 @@ export const CapacityDashboard: React.FC = () => {
                         className="w-3 h-3 rounded-full shrink-0"
                         style={{ backgroundColor: p.color }}
                       />
-                      <span className="font-bold text-sm text-white">{p.name}</span>
+                      <span className="font-bold text-sm text-slate-50">{p.name}</span>
                       <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">
                         {p.code}
                       </span>
@@ -186,11 +186,11 @@ export const CapacityDashboard: React.FC = () => {
                   <div className="grid grid-cols-4 gap-2 text-[11px] font-mono">
                     <div className="bg-slate-900/50 p-2 rounded border border-slate-800">
                       <div className="text-slate-400 text-[9px] uppercase">Required</div>
-                      <div className="font-bold text-white mt-0.5">{p.requiredCapacity}</div>
+                      <div className="font-bold text-slate-50 mt-0.5">{p.requiredCapacity}</div>
                     </div>
                     <div className="bg-slate-900/50 p-2 rounded border border-slate-800">
                       <div className="text-slate-400 text-[9px] uppercase">Allocated</div>
-                      <div className="font-bold text-white mt-0.5">{p.allocatedCount}</div>
+                      <div className="font-bold text-slate-50 mt-0.5">{p.allocatedCount}</div>
                     </div>
                     <div className="bg-slate-900/50 p-2 rounded border border-slate-800">
                       <div className="text-slate-400 text-[9px] uppercase">Net Usable</div>
@@ -260,7 +260,7 @@ export const CapacityDashboard: React.FC = () => {
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: z.color }} />
                         {z.name}
                       </td>
-                      <td className="p-2.5 text-white">{zSeats.length}</td>
+                      <td className="p-2.5 text-slate-50">{zSeats.length}</td>
                       <td className="p-2.5 text-sky-400">{zAlloc}</td>
                       <td className="p-2.5 font-bold text-emerald-400">{zOcc}%</td>
                     </tr>
