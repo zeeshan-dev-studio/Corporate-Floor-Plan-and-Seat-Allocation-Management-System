@@ -3,11 +3,11 @@ import { FloorMapModel, LegendEntry, MapRoom, MapSeat } from './types';
 
 // Same programs and colours as the demo data, so the sample lines up with the app out of the box.
 const PROGRAMS: LegendEntry[] = [
-  { key: 'AMZN', label: 'Amazon', kind: 'program', color: '#f97316', programCode: 'AMZN' },
-  { key: 'MCFE', label: 'McAfee', kind: 'program', color: '#ef4444', programCode: 'MCFE' },
-  { key: 'TMOB', label: 'T-Mobile', kind: 'program', color: '#ec4899', programCode: 'TMOB' },
-  { key: 'WAYF', label: 'Wayfair', kind: 'program', color: '#8b5cf6', programCode: 'WAYF' },
-  { key: 'HCG', label: 'Healthcare Global', kind: 'program', color: '#06b6d4', programCode: 'HCG' },
+  { key: 'RDUK', label: 'Rubber Duck Logistics', kind: 'program', color: '#f97316', programCode: 'RDUK' },
+  { key: 'SQRL', label: 'Sneaky Squirrel Security', kind: 'program', color: '#ef4444', programCode: 'SQRL' },
+  { key: 'LLAM', label: 'Llama Telecom', kind: 'program', color: '#ec4899', programCode: 'LLAM' },
+  { key: 'WOBL', label: 'Wobbly Table Retail', kind: 'program', color: '#8b5cf6', programCode: 'WOBL' },
+  { key: 'HIPO', label: 'Happy Hippo Health', kind: 'program', color: '#06b6d4', programCode: 'HIPO' },
 ];
 
 const POD_ROWS = [6, 10, 14, 18, 22, 26];
@@ -19,17 +19,17 @@ const ZONES: Array<{ code: string; cols: number[]; rows: string[][] }> = [
   {
     code: 'A',
     cols: [0, 8],
-    rows: [['AMZN', 'AMZN'], ['AMZN', 'AMZN'], ['AMZN', 'AMZN'], ['AMZN', 'MCFE'], ['MCFE', 'MCFE'], ['MCFE', 'SUPPORT']],
+    rows: [['RDUK', 'RDUK'], ['RDUK', 'RDUK'], ['RDUK', 'RDUK'], ['RDUK', 'SQRL'], ['SQRL', 'SQRL'], ['SQRL', 'SUPPORT']],
   },
   {
     code: 'B',
     cols: [18, 26],
-    rows: [['TMOB', 'TMOB'], ['TMOB', 'TMOB'], ['TMOB', 'WAYF'], ['WAYF', 'WAYF'], ['WAYF', 'VACANT'], ['VACANT', 'VACANT']],
+    rows: [['LLAM', 'LLAM'], ['LLAM', 'LLAM'], ['LLAM', 'WOBL'], ['WOBL', 'WOBL'], ['WOBL', 'VACANT'], ['VACANT', 'VACANT']],
   },
   {
     code: 'C',
     cols: [36, 44],
-    rows: [['HCG', 'HCG'], ['HCG', 'MCFE'], ['MCFE', 'MCFE'], ['AMZN', 'AMZN'], ['AMZN', 'SUPPORT'], ['SUPPORT', 'VACANT']],
+    rows: [['HIPO', 'HIPO'], ['HIPO', 'SQRL'], ['SQRL', 'SQRL'], ['RDUK', 'RDUK'], ['RDUK', 'SUPPORT'], ['SUPPORT', 'VACANT']],
   },
 ];
 

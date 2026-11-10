@@ -5,9 +5,9 @@
 export type CellKind = 'program' | 'vacant' | 'nonusable' | 'support';
 
 export interface LegendEntry {
-  /** Stable id that seats point at, e.g. "AMZN", "VACANT". */
+  /** Stable id that seats point at, e.g. "RDUK", "VACANT". */
   key: string;
-  /** What the legend says, e.g. "Amazon" or "IT Helpdesk". */
+  /** What the legend says, e.g. "Duck" or "IT Helpdesk". */
   label: string;
   kind: CellKind;
   /** Border colour used in Excel, "#rrggbb". */

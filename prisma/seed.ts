@@ -68,57 +68,57 @@ async function main() {
   });
 
   console.log('--- Creating Programs ---');
-  const amazon = await prisma.program.create({
+  const duck = await prisma.program.create({
     data: {
-      name: 'Amazon',
-      code: 'AMZN',
+      name: 'Rubber Duck Logistics',
+      code: 'RDUK',
       color: '#f97316', // Orange
       requiredCapacity: 250,
-      contactPerson: 'Arun Kumar (Operations Director)',
+      contactPerson: 'Captain Quack (Operations Director)',
       notes: 'Customer support and AWS cloud operations teams',
     },
   });
 
-  const mcafee = await prisma.program.create({
+  const squirrel = await prisma.program.create({
     data: {
-      name: 'McAfee',
-      code: 'MCFE',
+      name: 'Sneaky Squirrel Security',
+      code: 'SQRL',
       color: '#ef4444', // Red
       requiredCapacity: 120,
-      contactPerson: 'Sneha Rao (Global Security Lead)',
+      contactPerson: 'Nutty Nina (Chief Acorn Officer)',
       notes: 'Cybersecurity incident response and SOC shift',
     },
   });
 
-  const tmobile = await prisma.program.create({
+  const llama = await prisma.program.create({
     data: {
-      name: 'T-Mobile',
-      code: 'TMOB',
+      name: 'Llama Telecom',
+      code: 'LLAM',
       color: '#ec4899', // Magenta
       requiredCapacity: 90,
-      contactPerson: 'David Miller (Telecom Delivery)',
+      contactPerson: 'Larry Llama (Spit-Speed Delivery)',
       notes: 'Network provisioning and billing support',
     },
   });
 
-  const wayfair = await prisma.program.create({
+  const wobbly = await prisma.program.create({
     data: {
-      name: 'Wayfair',
-      code: 'WAYF',
+      name: 'Wobbly Table Retail',
+      code: 'WOBL',
       color: '#8b5cf6', // Purple
       requiredCapacity: 60,
-      contactPerson: 'Kavita Patel (E-Commerce Lead)',
+      contactPerson: 'Wobbles McTable (Wobble Lead)',
       notes: 'Catalog management and logistics coordination',
     },
   });
 
-  const healthcare = await prisma.program.create({
+  const hippo = await prisma.program.create({
     data: {
-      name: 'Healthcare Global',
-      code: 'HCG',
+      name: 'Happy Hippo Health',
+      code: 'HIPO',
       color: '#06b6d4', // Cyan
       requiredCapacity: 40,
-      contactPerson: 'Dr. Joseph Nair (Healthcare Ops)',
+      contactPerson: 'Dr. Hugo Hippo (Happy Ops)',
       notes: 'Clinical claims and telehealth scheduling',
     },
   });
@@ -647,20 +647,20 @@ async function main() {
   console.log('--- Generating 500+ Workstations and Seats ---');
 
   // We will build:
-  // Zone A: South Wing (Amazon dedicated zone)
-  // - 16 Y-Shaped Bays (6 seats each = 96 seats)
+  // Zone A: South Wing (Duck dedicated zone)
+  // - 16 back-to-back 6-seat benches, 3 x 2 at a 4.5 ft pitch (96 seats)
   // - 16 Linear Benches (8 seats each = 128 seats)
-  // Total Zone A = 224 seats (Amazon: 210, Blocked for Maintenance: 8, Vacant: 6)
+  // Total Zone A = 224 seats (Duck: 210, Blocked for Maintenance: 8, Vacant: 6)
 
-  // Zone B: Central Core (McAfee & T-Mobile)
+  // Zone B: Central Core (Squirrel & Llama)
   // - 12 Linear Benches (8 seats each = 96 seats)
   // - 14 6-Seat Pod Clusters = 84 seats
-  // Total Zone B = 180 seats (McAfee: 105, T-Mobile: 65, Blocked for IT issue: 10)
+  // Total Zone B = 180 seats (Squirrel: 105, Llama: 65, Blocked for IT issue: 10)
 
-  // Zone C: North Wing (Wayfair, Healthcare Global, & Vacant Flex)
+  // Zone C: North Wing (Wobbly, Happy Hippo Health, & Vacant Flex)
   // - 10 8-Seat Benches = 80 seats
   // - 8 6-Seat Pods = 48 seats
-  // Total Zone C = 128 seats (Wayfair: 55, Healthcare: 35, Unallocated/Vacant: 38)
+  // Total Zone C = 128 seats (Wobbly: 55, Hippo: 35, Unallocated/Vacant: 38)
   // Grand Total = 532 seats!
 
   const allSeats: any[] = [];
@@ -674,48 +674,52 @@ async function main() {
 
   let seatCountA = 0;
 
-  // === ZONE A: Y-BAYS (16 bays) ===
-  // Positioned in Left Section: X from 120 to 1050, Y from 500 to 1150
+  // === ZONE A: 6-SEAT BENCHES (16 benches) ===
+  // The usual BPO floor: two rows of three seats back to back, 4.5 ft seat pitch,
+  // about 6 ft aisles between benches along the row and 5 ft between rows.
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) {
       const bayNum = row * 4 + col + 1;
-      const bayCode = `Y-BAY-${String(bayNum).padStart(2, '0')}`;
-      const bx = 140 + col * 250;
-      const by = 520 + row * 160;
+      const bayCode = `BNC-A-${String(bayNum).padStart(2, '0')}`;
+      const bx = 140 + col * 200;
+      const by = 520 + row * 150;
 
       // Create Workstation FloorObject
       const bayObj = await prisma.floorObject.create({
         data: {
           floorId: floor.id,
           type: 'bay',
-          subType: 'yBay',
+          subType: 'box',
           layer: 'workstations',
           x: bx,
           y: by,
-          width: 180,
-          height: 120,
+          width: 135,
+          height: 100,
           rotation: 0,
           geometry: JSON.stringify({
-            shape: 'polygon',
+            shape: 'rect',
             fill: '#1e293b',
-            stroke: '#3b82f6',
+            stroke: '#475569',
           }),
           properties: JSON.stringify({
             label: bayCode,
-            tableType: 'Y-Shape 120-degree Pod',
+            tableType: 'Back-to-Back 6-Seat Bench',
             capacity: 6,
+            seatRows: 2,
+            seatCols: 3,
+            arrangement: 'grid',
           }),
         },
       });
 
-      // 6 Seats around the Y-Bay
+      // 3 seats on each side of the bench, 4.5 ft apart, the same layout as the other benches
       const offsets = [
-        { dx: 30, dy: 15, rot: 0 },
-        { dx: 90, dy: 15, rot: 0 },
-        { dx: 150, dy: 50, rot: 60 },
-        { dx: 130, dy: 105, rot: 120 },
-        { dx: 50, dy: 105, rot: 180 },
-        { dx: 10, dy: 50, rot: 240 },
+        { dx: 22.5, dy: 25, rot: 0 },
+        { dx: 67.5, dy: 25, rot: 0 },
+        { dx: 112.5, dy: 25, rot: 0 },
+        { dx: 22.5, dy: 75, rot: 180 },
+        { dx: 67.5, dy: 75, rot: 180 },
+        { dx: 112.5, dy: 75, rot: 180 },
       ];
 
       for (let s = 0; s < 6; s++) {
@@ -735,15 +739,15 @@ async function main() {
           },
         });
 
-        // Allocation: 90% Amazon, 5% Blocked, 5% Vacant
+        // Allocation: 90% Duck, 5% Blocked, 5% Vacant
         if (seatCountA <= 88) {
           await prisma.seatAllocation.create({
             data: {
               seatId: seat.id,
-              programId: amazon.id,
+              programId: duck.id,
               status: 'ALLOCATED',
               shift: '09:00 - 18:00',
-              employeeName: `Amazon Associate #${seatCountA}`,
+              employeeName: `Duck Associate #${seatCountA}`,
               effectiveDate: new Date('2026-01-01'),
             },
           });
@@ -752,7 +756,7 @@ async function main() {
           await prisma.seatAllocation.create({
             data: {
               seatId: seat.id,
-              programId: amazon.id,
+              programId: duck.id,
               status: 'ALLOCATED',
               shift: '09:00 - 18:00',
               effectiveDate: new Date('2026-01-01'),
@@ -802,6 +806,9 @@ async function main() {
           label: benchCode,
           tableType: 'Back-to-Back 8-Seat Linear Bench',
           capacity: 8,
+          seatRows: 2,
+          seatCols: 4,
+          arrangement: 'grid',
         }),
       },
     });
@@ -827,15 +834,15 @@ async function main() {
         },
       });
 
-      // Amazon allocation
+      // Duck allocation
       if (seatCountA <= 218) {
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: amazon.id,
+            programId: duck.id,
             status: 'ALLOCATED',
             shift: seatCountA % 2 === 0 ? '08:00 - 17:00' : '13:00 - 22:00',
-            employeeName: `Amazon Specialist #${seatCountA}`,
+            employeeName: `Duck Specialist #${seatCountA}`,
             effectiveDate: new Date('2026-02-01'),
           },
         });
@@ -843,7 +850,7 @@ async function main() {
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: amazon.id,
+            programId: duck.id,
             status: 'ALLOCATED',
             shift: '08:00 - 17:00',
             effectiveDate: new Date('2026-02-01'),
@@ -863,7 +870,7 @@ async function main() {
     }
   }
 
-  // === ZONE B: CENTRAL WING (McAfee & T-Mobile) ===
+  // === ZONE B: CENTRAL WING (Squirrel & Llama) ===
   // X: 1680 to 2050, Y: 520 to 1680
   let seatCountB = 0;
 
@@ -893,8 +900,11 @@ async function main() {
         }),
         properties: JSON.stringify({
           label: benchCode,
-          tableType: 'McAfee SOC Dedicated Bench',
+          tableType: 'Squirrel SOC Dedicated Bench',
           capacity: 8,
+          seatRows: 2,
+          seatCols: 4,
+          arrangement: 'grid',
         }),
       },
     });
@@ -920,15 +930,15 @@ async function main() {
         },
       });
 
-      // McAfee Allocation
+      // Squirrel Allocation
       if (seatCountB <= 88) {
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: mcafee.id,
+            programId: squirrel.id,
             status: 'ALLOCATED',
             shift: '24/7 Rotational SOC',
-            employeeName: `McAfee Analyst #${seatCountB}`,
+            employeeName: `Squirrel Analyst #${seatCountB}`,
             effectiveDate: new Date('2026-01-15'),
           },
         });
@@ -936,7 +946,7 @@ async function main() {
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: mcafee.id,
+            programId: squirrel.id,
             status: 'ALLOCATED',
             shift: '24/7 Rotational SOC',
             effectiveDate: new Date('2026-01-15'),
@@ -955,7 +965,7 @@ async function main() {
     }
   }
 
-  // 14 6-Seat Pod Clusters in Zone B (84 seats for T-Mobile & McAfee)
+  // 14 6-Seat Pod Clusters in Zone B (84 seats for Llama & Squirrel)
   for (let p = 0; p < 14; p++) {
     const col = p % 2;
     const row = Math.floor(p / 2);
@@ -983,6 +993,9 @@ async function main() {
           label: podCode,
           tableType: 'Collaborative 6-Pod',
           capacity: 6,
+          seatRows: 2,
+          seatCols: 3,
+          arrangement: 'grid',
         }),
       },
     });
@@ -1008,24 +1021,24 @@ async function main() {
         },
       });
 
-      // T-Mobile Allocation
+      // Llama Allocation
       if (seatCountB <= 165) {
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: tmobile.id,
+            programId: llama.id,
             status: 'ALLOCATED',
             shift: '10:00 - 19:00',
-            employeeName: `T-Mobile Support #${seatCountB}`,
+            employeeName: `Llama Support #${seatCountB}`,
             effectiveDate: new Date('2026-03-01'),
           },
         });
       } else if (seatCountB <= 172) {
-        // T-Mobile allocated + Blocked
+        // Llama allocated + Blocked
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: tmobile.id,
+            programId: llama.id,
             status: 'ALLOCATED',
             shift: '10:00 - 19:00',
             effectiveDate: new Date('2026-03-01'),
@@ -1036,7 +1049,7 @@ async function main() {
             seatId: seat.id,
             reason: 'Reserved',
             startDate: new Date('2026-09-20'),
-            notes: 'Reserved for incoming T-Mobile regional QA team',
+            notes: 'Reserved for incoming Llama regional QA team',
             active: true,
           },
         });
@@ -1045,7 +1058,7 @@ async function main() {
     }
   }
 
-  // === ZONE C: NORTH-EAST WING (Wayfair, Healthcare Global & Flexible Seats) ===
+  // === ZONE C: NORTH-EAST WING (Wobbly, Happy Hippo Health & Flexible Seats) ===
   // X: 2150 to 2650, Y: 520 to 1180
   let seatCountC = 0;
 
@@ -1075,8 +1088,11 @@ async function main() {
         }),
         properties: JSON.stringify({
           label: benchCode,
-          tableType: 'Wayfair / Enterprise Flex Bench',
+          tableType: 'Wobbly / Enterprise Flex Bench',
           capacity: 8,
+          seatRows: 2,
+          seatCols: 4,
+          arrangement: 'grid',
         }),
       },
     });
@@ -1102,27 +1118,27 @@ async function main() {
         },
       });
 
-      // Wayfair Allocation (55 seats)
+      // Wobbly Allocation (55 seats)
       if (seatCountC <= 55) {
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: wayfair.id,
+            programId: wobbly.id,
             status: 'ALLOCATED',
             shift: '09:30 - 18:30',
-            employeeName: `Wayfair Ops #${seatCountC}`,
+            employeeName: `Wobbly Ops #${seatCountC}`,
             effectiveDate: new Date('2026-04-01'),
           },
         });
       } else if (seatCountC <= 80) {
-        // Healthcare Global Allocation (25 seats)
+        // Happy Hippo Health Allocation (25 seats)
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: healthcare.id,
+            programId: hippo.id,
             status: 'ALLOCATED',
             shift: '07:00 - 16:00',
-            employeeName: `Healthcare Associate #${seatCountC}`,
+            employeeName: `Hippo Associate #${seatCountC}`,
             effectiveDate: new Date('2026-05-01'),
           },
         });
@@ -1158,6 +1174,9 @@ async function main() {
           label: podCode,
           tableType: 'Flexible Hot-Desk Pod',
           capacity: 6,
+          seatRows: 2,
+          seatCols: 3,
+          arrangement: 'grid',
         }),
       },
     });
@@ -1183,15 +1202,15 @@ async function main() {
         },
       });
 
-      // 10 Healthcare, remaining 38 are unallocated/vacant
+      // 10 Hippo, remaining 38 are unallocated/vacant
       if (seatCountC <= 90) {
         await prisma.seatAllocation.create({
           data: {
             seatId: seat.id,
-            programId: healthcare.id,
+            programId: hippo.id,
             status: 'ALLOCATED',
             shift: '14:00 - 23:00',
-            employeeName: `Healthcare Associate #${seatCountC}`,
+            employeeName: `Hippo Associate #${seatCountC}`,
             effectiveDate: new Date('2026-05-01'),
           },
         });
@@ -1218,7 +1237,7 @@ async function main() {
     data: {
       floorId: floor.id,
       versionName: 'v1.0 - Q3 Baseline Layout',
-      description: 'Initial operational layout with Amazon, McAfee, T-Mobile, Wayfair & Healthcare allocations',
+      description: 'Initial operational layout with Duck, Squirrel, Llama, Wobbly & Hippo allocations',
       // A full snapshot, so restoring the baseline actually rebuilds this layout
       snapshotJson: JSON.stringify(await captureFloorSnapshot(prisma, floor.id)),
       createdBy: 'Administrator',
@@ -1241,10 +1260,10 @@ async function main() {
       {
         action: 'BULK_ASSIGN_PROGRAM',
         entityType: 'PROGRAM',
-        entityId: amazon.id,
+        entityId: duck.id,
         user: 'Capacity Planner',
         userRole: 'Capacity Planner',
-        newValue: JSON.stringify({ program: 'Amazon', seatsAssigned: 214 }),
+        newValue: JSON.stringify({ program: 'Rubber Duck Logistics', seatsAssigned: 214 }),
         reason: 'Q3 AWS Expansion Contract',
         source: 'BULK_ACTION',
       },

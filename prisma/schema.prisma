@@ -55,7 +55,7 @@ model FloorObject {
   id          String   @id @default(uuid())
   floorId     String
   type        String   // wall, glass, door, room, bay, furniture, facility, it, safety, dimension
-  subType     String?  // yBay, linearBench, boardroom, theater, singleDoor, etc.
+  subType     String?  // box, linearBench, pod6, boardroom, theater, singleDoor, etc.
   layer       String   // architecture, walls, doors, glass, rooms, workstations, furniture, facilities, it, safety, dimensions
   x           Float
   y           Float
@@ -93,7 +93,7 @@ model Seat {
   floorId       String
   zoneId        String?
   floorObjectId String?
-  bayCode       String?          // e.g. Y-BAY-07
+  bayCode       String?          // e.g. BNC-A-07
   seatType      String           @default("standard") // standard, hot_desk, team_lead, ops_manager, accessible
   x             Float
   y             Float
