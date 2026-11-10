@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronDown, Map as MapIcon } from 'lucide-react';
 import { FloorObjectDTO, SeatDTO } from '@/types/floorplan';
 
 interface MiniMapProps {
@@ -26,7 +27,8 @@ export const MiniMap: React.FC<MiniMapProps> = ({
   seats,
   onNavigate,
 }) => {
-  const mapWidth = 200;
+  const [open, setOpen] = useState(true);
+  const mapWidth = 160;
   const mapHeight = (mapWidth * floorHeight) / floorWidth;
 
   const scaleX = mapWidth / floorWidth;
@@ -53,13 +55,32 @@ export const MiniMap: React.FC<MiniMapProps> = ({
     onNavigate(targetFloorX, targetFloorY);
   };
 
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        title="Show the minimap"
+        className="absolute bottom-4 right-8 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-600 text-xs font-semibold text-slate-100 shadow-md hover:bg-slate-800"
+      >
+        <MapIcon className="w-4 h-4" /> Map
+      </button>
+    );
+  }
+
   return (
+    <div className="absolute bottom-4 right-8 z-20 bg-slate-900 border border-slate-600 rounded-lg shadow-xl overflow-hidden" style={{ width: mapWidth + 10 }}>
+      <div className="flex items-center justify-between px-2 py-1 border-b border-slate-700 text-[11px] font-semibold text-slate-100">
+        <span>Map · {Math.round(zoom * 100)}%</span>
+        <button onClick={() => setOpen(false)} title="Hide the minimap" aria-label="Hide minimap" className="p-0.5 rounded hover:bg-slate-700">
+          <ChevronDown className="w-4 h-4" />
+        </button>
+      </div>
     <div
       onClick={handleClick}
-      className="absolute bottom-4 right-4 bg-slate-900/90 border border-slate-700 rounded-lg p-1 shadow-2xl backdrop-blur-md cursor-crosshair z-20 overflow-hidden"
+      className="p-1 cursor-crosshair"
       style={{ width: mapWidth + 10, height: mapHeight + 10 }}
     >
-      <div className="relative w-full h-full bg-slate-950 rounded border border-slate-800 overflow-hidden">
+      <div className="relative w-full h-full bg-slate-950 rounded border border-slate-700 overflow-hidden">
         <svg
           viewBox={`0 0 ${floorWidth} ${floorHeight}`}
           className="w-full h-full opacity-60"
@@ -72,9 +93,9 @@ export const MiniMap: React.FC<MiniMapProps> = ({
               y={obj.y}
               width={obj.width}
               height={obj.height}
-              fill="#475569"
+              fill="#334155"
               fillOpacity={0.3}
-              stroke="#64748b"
+              stroke="#0f172a"
               strokeWidth={4}
             />
           ))}
@@ -102,9 +123,7 @@ export const MiniMap: React.FC<MiniMapProps> = ({
           }}
         />
       </div>
-      <div className="text-[9px] font-mono text-slate-400 text-center mt-0.5">
-        MINIMAP ({Math.round(zoom * 100)}%)
-      </div>
+    </div>
     </div>
   );
 };
