@@ -1,7 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useFloorPlanStore } from '@/store/useFloorPlanStore';
+import { ObjectInspector, MultiObjectInspector } from './ObjectInspector';
+import { NumberField } from './NumberField';
+import { isDraftId } from '@/lib/floorGeometry';
+import { SeatType } from '@/types/floorplan';
 import {
   Info,
   Users,
@@ -18,30 +22,13 @@ import {
   Calendar,
 } from 'lucide-react';
 
-/** Number input that keeps what you type (blank, "-", decimals) and commits once on blur or Enter: one undo step, no forced 0. */
-const NumberField: React.FC<{ value: number; min?: number; disabled?: boolean; onCommit: (n: number) => void }> = ({ value, min, disabled, onCommit }) => {
-  const [text, setText] = useState(String(value));
-  useEffect(() => setText(String(value)), [value]);
-  const commit = () => {
-    const n = parseFloat(text);
-    if (Number.isFinite(n) && (min === undefined || n >= min)) {
-      if (n !== value) onCommit(n);
-    } else {
-      setText(String(value));
-    }
-  };
-  return (
-    <input
-      type="number"
-      value={text}
-      disabled={disabled}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-      className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white"
-    />
-  );
-};
+const SEAT_TYPES: Array<{ id: SeatType; label: string }> = [
+  { id: 'standard', label: 'Standard' },
+  { id: 'hot_desk', label: 'Hot desk' },
+  { id: 'team_lead', label: 'Team lead' },
+  { id: 'ops_manager', label: 'Ops manager' },
+  { id: 'accessible', label: 'Accessible' },
+];
 
 export const PropertiesPanel: React.FC = () => {
   const {
@@ -57,8 +44,9 @@ export const PropertiesPanel: React.FC = () => {
     setBulkBlockOpen,
     setBulkUnallocateOpen,
     bulkUnblockSeats,
-    updateObject,
-    deleteSelectedObjects,
+    deleteSelection,
+    setSelectedSeatType,
+    setFloorSize,
   } = useFloorPlanStore();
 
   const canEditAllocations =
@@ -74,14 +62,14 @@ export const PropertiesPanel: React.FC = () => {
     const seat = seats.find((s) => s.id === selectedSeatIds[0]);
     if (seat) {
       return (
-        <aside className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-20 select-none text-xs text-slate-200">
+        <aside className="w-80 h-full min-h-0 shrink-0 bg-slate-900 border-l border-slate-700 flex flex-col z-20 select-none text-xs text-slate-200">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-sky-500/20 text-sky-400 rounded-md">
                 <Info className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-white">{seat.seatId}</h3>
+                <h3 className="font-bold text-sm text-slate-50">{seat.seatId}</h3>
                 <span className="text-[10px] text-slate-400 uppercase font-mono">
                   {seat.bayCode || 'Individual Workstation'}
                 </span>
@@ -101,8 +89,9 @@ export const PropertiesPanel: React.FC = () => {
                 <span
                   className="font-bold px-2 py-0.5 rounded text-[11px]"
                   style={{
-                    backgroundColor: seat.programColor ? `${seat.programColor}25` : '#334155',
-                    color: seat.programColor || '#94a3b8',
+                    backgroundColor: seat.programColor ? `${seat.programColor}40` : '#e2e8f0',
+                    color: '#0f172a',
+                    border: `1px solid ${seat.programColor || '#64748b'}`,
                   }}
                 >
                   {seat.programName || 'Unallocated'}
@@ -202,6 +191,37 @@ export const PropertiesPanel: React.FC = () => {
               </div>
             </div>
 
+            {/* Layout: seat type and removal */}
+            {canManageFacilities && (
+              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-2">
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Seat layout</div>
+                {isDraftId(seat.id) && (
+                  <div className="text-[11px] text-amber-300">New seat: press Save to store it. It can be allocated after saving.</div>
+                )}
+                <label className="block">
+                  <span className="text-[10px] text-slate-500 block mb-0.5">Seat type</span>
+                  <select
+                    value={seat.seatType}
+                    onChange={(e) => setSelectedSeatType(e.target.value as SeatType)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-50"
+                  >
+                    {SEAT_TYPES.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  onClick={deleteSelection}
+                  className="w-full py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500 text-red-300 hover:text-white border border-red-500/30 flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete seat
+                </button>
+              </div>
+            )}
+
             {/* Quick Action Buttons */}
             <div className="space-y-2 pt-2">
               {canEditAllocations && (
@@ -266,9 +286,9 @@ export const PropertiesPanel: React.FC = () => {
     });
 
     return (
-      <aside className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-20 select-none text-xs text-slate-200">
+      <aside className="w-80 h-full min-h-0 shrink-0 bg-slate-900 border-l border-slate-700 flex flex-col z-20 select-none text-xs text-slate-200">
         <div className="p-4 border-b border-slate-800">
-          <h3 className="font-bold text-sm text-white">Bulk Seat Selection</h3>
+          <h3 className="font-bold text-sm text-slate-50">Bulk Seat Selection</h3>
           <p className="text-[11px] text-slate-400">
             {selectedSeatIds.length} Workstations Selected
           </p>
@@ -283,7 +303,7 @@ export const PropertiesPanel: React.FC = () => {
               {Object.entries(breakdown).map(([name, count]) => (
                 <div key={name} className="flex justify-between items-center py-1 border-b border-slate-800">
                   <span className="text-slate-300 font-medium">{name}</span>
-                  <span className="font-mono font-bold text-white bg-slate-800 px-2 py-0.5 rounded">
+                  <span className="font-mono font-bold text-slate-50 bg-slate-800 px-2 py-0.5 rounded">
                     {count}
                   </span>
                 </div>
@@ -296,6 +316,31 @@ export const PropertiesPanel: React.FC = () => {
               </div>
             )}
           </div>
+
+          {canManageFacilities && (
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-2">
+              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Seat layout</div>
+              <select
+                defaultValue=""
+                onChange={(e) => e.target.value && setSelectedSeatType(e.target.value as SeatType)}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-50"
+              >
+                <option value="">Set seat type for all selected...</option>
+                {SEAT_TYPES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={deleteSelection}
+                className="w-full py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500 text-red-300 hover:text-white border border-red-500/30 flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete {selectedSeatIds.length} seats
+              </button>
+            </div>
+          )}
 
           <div className="space-y-2">
             {canEditAllocations && (
@@ -332,96 +377,13 @@ export const PropertiesPanel: React.FC = () => {
     );
   }
 
-  // 3. Floor Object Selected
+  // 3. Floor object(s) selected
   if (selectedObjectIds.length === 1) {
     const obj = objects.find((o) => o.id === selectedObjectIds[0]);
-    if (obj) {
-      return (
-        <aside className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-20 select-none text-xs text-slate-200">
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-sm text-white">
-                {obj.properties?.label || obj.type.toUpperCase()}
-              </h3>
-              <span className="text-[10px] text-slate-400 uppercase font-mono">
-                {obj.type} • Layer: {obj.layer}
-              </span>
-            </div>
-            {canManageFacilities && (
-              <button
-                onClick={deleteSelectedObjects}
-                title="Delete Object"
-                className="p-1.5 bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-2.5 font-mono text-[11px]">
-              <div className="text-[10px] uppercase font-bold text-slate-400 font-sans tracking-wider">
-                Geometry & Dimensions
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-slate-500 block mb-0.5">X Position</label>
-                  <NumberField value={obj.x} disabled={!canManageFacilities || obj.locked} onCommit={(n) => updateObject({ ...obj, x: n })} />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 block mb-0.5">Y Position</label>
-                  <NumberField value={obj.y} disabled={!canManageFacilities || obj.locked} onCommit={(n) => updateObject({ ...obj, y: n })} />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 block mb-0.5">Width</label>
-                  <NumberField value={obj.width} min={1} disabled={!canManageFacilities || obj.locked} onCommit={(n) => updateObject({ ...obj, width: n })} />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 block mb-0.5">Height</label>
-                  <NumberField value={obj.height} min={1} disabled={!canManageFacilities || obj.locked} onCommit={(n) => updateObject({ ...obj, height: n })} />
-                </div>
-              </div>
-            </div>
-
-            {/* Room Properties */}
-            {obj.type === 'room' && (
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-2">
-                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  Room Configuration
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 block mb-0.5">Room Label</label>
-                  <input
-                    type="text"
-                    value={obj.properties?.label || ''}
-                    disabled={!canManageFacilities || obj.locked}
-                    onChange={(e) =>
-                      updateObject({
-                        ...obj,
-                        properties: { ...obj.properties, label: e.target.value },
-                      })
-                    }
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white"
-                  />
-                </div>
-                <div className="flex justify-between pt-1">
-                  <span className="text-slate-400">Design Capacity:</span>
-                  <span className="font-bold text-white font-mono">
-                    {obj.properties?.capacity || 0} Pax
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Gross Floor Area:</span>
-                  <span className="font-bold text-sky-400 font-mono">
-                    {obj.properties?.areaSqFt || 0} Sq Ft
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </aside>
-      );
-    }
+    if (obj) return <ObjectInspector object={obj} />;
+  }
+  if (selectedObjectIds.length > 1) {
+    return <MultiObjectInspector count={selectedObjectIds.length} />;
   }
 
   // 4. Default / Floor Summary
@@ -431,9 +393,9 @@ export const PropertiesPanel: React.FC = () => {
   const vacantSeats = seats.filter((s) => !s.programId && !s.isBlocked).length;
 
   return (
-    <aside className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-20 select-none text-xs text-slate-200">
+    <aside className="w-80 h-full min-h-0 shrink-0 bg-slate-900 border-l border-slate-700 flex flex-col z-20 select-none text-xs text-slate-200">
       <div className="p-4 border-b border-slate-800">
-        <h3 className="font-bold text-sm text-white">Floor Metrics & Status</h3>
+        <h3 className="font-bold text-sm text-slate-50">Floor Metrics & Status</h3>
         <p className="text-[11px] text-slate-400">
           {building?.name} • {floor?.name}
         </p>
@@ -444,7 +406,7 @@ export const PropertiesPanel: React.FC = () => {
         <div className="grid grid-cols-2 gap-2 text-center">
           <div className="bg-slate-800/60 border border-slate-700 p-2.5 rounded-lg">
             <div className="text-[10px] text-slate-400">Total Workstations</div>
-            <div className="text-lg font-bold font-mono text-white mt-0.5">{totalSeats}</div>
+            <div className="text-lg font-bold font-mono text-slate-50 mt-0.5">{totalSeats}</div>
           </div>
           <div className="bg-slate-800/60 border border-slate-700 p-2.5 rounded-lg">
             <div className="text-[10px] text-slate-400">Floor Utilization</div>
@@ -465,14 +427,14 @@ export const PropertiesPanel: React.FC = () => {
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 Allocated Seats:
               </span>
-              <span className="font-mono font-bold text-white">{allocatedSeats}</span>
+              <span className="font-mono font-bold text-slate-50">{allocatedSeats}</span>
             </div>
             <div className="flex justify-between items-center text-slate-300">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-slate-500" />
                 Vacant / Available:
               </span>
-              <span className="font-mono font-bold text-white">{vacantSeats}</span>
+              <span className="font-mono font-bold text-slate-50">{vacantSeats}</span>
             </div>
             <div className="flex justify-between items-center text-slate-300">
               <span className="flex items-center gap-1.5">
@@ -483,6 +445,24 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Floor size */}
+        {floor && canManageFacilities && (
+          <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Floor size (feet)</div>
+            <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
+              <div>
+                <label className="text-[10px] text-slate-500 block mb-0.5">Width</label>
+                <NumberField value={Math.round(floor.width / 10)} min={20} max={2000} onCommit={(n) => setFloorSize(n * 10, floor.height)} />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 block mb-0.5">Depth</label>
+                <NumberField value={Math.round(floor.height / 10)} min={20} max={2000} onCommit={(n) => setFloorSize(floor.width, n * 10)} />
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500">The drawing area. Set it to your real floor plate, then press Save.</p>
+          </div>
+        )}
 
         {/* Programs Quick List */}
         <div className="space-y-2">
@@ -497,10 +477,10 @@ export const PropertiesPanel: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                  <span className="font-semibold text-white">{p.name}</span>
+                  <span className="font-semibold text-slate-50">{p.name}</span>
                 </div>
                 <div className="font-mono text-slate-300">
-                  <span className="text-white font-bold">{p.allocatedCount}</span>
+                  <span className="text-slate-50 font-bold">{p.allocatedCount}</span>
                   <span className="text-slate-500"> / {p.requiredCapacity}</span>
                 </div>
               </div>
@@ -509,7 +489,7 @@ export const PropertiesPanel: React.FC = () => {
         </div>
 
         <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-[11px] text-sky-300">
-          💡 Click any seat or drag a marquee box across multiple seats to open bulk allocation actions.
+          💡 Click any seat or drag a box across several seats to allocate them. To design the floor, use the tools at the top-left of the canvas: draw rooms of any shape, walls and workstations with seats.
         </div>
       </div>
     </aside>

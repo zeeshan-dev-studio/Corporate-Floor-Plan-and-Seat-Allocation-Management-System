@@ -9,24 +9,17 @@ export type LayerId =
   | 'furniture'
   | 'facilities'
   | 'it'
-  | 'safety'
-  | 'dimensions'
-  | 'allocation';
+  | 'safety';
 
 export type ToolMode =
   | 'select'
   | 'pan'
-  | 'box_select'
   | 'wall'
   | 'glass'
-  | 'door'
   | 'room'
+  | 'polyroom'
   | 'workstation'
-  | 'furniture'
-  | 'facility'
-  | 'it'
-  | 'safety'
-  | 'dimension';
+  | 'seat';
 
 export type ViewMode = 'operational' | 'architectural';
 
@@ -76,6 +69,7 @@ export interface RectBounds {
 export interface GeometryData {
   points?: Point[];
   path?: string;
+  /** rect (default), circle (ellipse filling the box) or polygon. Polygon points are local: 0..width, 0..height. */
   shape?: 'rect' | 'circle' | 'polygon' | 'path' | 'line';
   fill?: string;
   stroke?: string;
@@ -112,6 +106,14 @@ export interface ObjectProperties {
   tableType?: string;
   chairCount?: number;
   notes?: string;
+  /** Workstations: how the seats are laid out inside the shape. */
+  seatRows?: number;
+  seatCols?: number;
+  arrangement?: 'grid' | 'around';
+  /** grid with 2+ rows: chairs on both sides facing the desk ('inward') or all facing the same way ('same'). */
+  seatFacing?: 'inward' | 'same';
+  /** Door: mirror the swing. */
+  flip?: boolean;
 }
 
 export interface FloorObjectDTO {

@@ -92,7 +92,23 @@ export async function POST(req: NextRequest) {
     if (action === 'BATCH_SAVE' && Array.isArray(objects) && floorId) {
       const idsToDelete: string[] = Array.isArray(deletedObjectIds) ? deletedObjectIds : [];
       const created: { tempId: string; id: string }[] = [];
+      const createdSeats: { tempId: string; id: string }[] = [];
+      const seatsIn = body.seats || {};
+      const seatsToCreate: any[] = Array.isArray(seatsIn.created) ? seatsIn.created : [];
+      const seatsToUpdate: any[] = Array.isArray(seatsIn.updated) ? seatsIn.updated : [];
+      const seatsToDelete: string[] = Array.isArray(seatsIn.deletedIds) ? seatsIn.deletedIds : [];
       let deletedCount = 0;
+
+      const SEAT_TYPES = ['standard', 'hot_desk', 'team_lead', 'ops_manager', 'accessible'];
+      for (const sd of [...seatsToCreate, ...seatsToUpdate]) {
+        if (![sd.x, sd.y, sd.rotation].every((n) => Number.isFinite(n)) || !SEAT_TYPES.includes(sd.seatType)) {
+          return NextResponse.json({ success: false, error: 'A seat has an invalid position or type.' }, { status: 400 });
+        }
+      }
+      const newIds = seatsToCreate.map((sd) => String(sd.seatId || '').trim());
+      if (newIds.some((id) => !id || id.length > 60) || new Set(newIds.map((id) => id.toUpperCase())).size !== newIds.length) {
+        return NextResponse.json({ success: false, error: 'New seats need unique seat IDs.' }, { status: 400 });
+      }
 
       await prisma.$transaction(async (tx) => {
         // Objects removed in the editor since the last save (scoped to this floor)
@@ -131,6 +147,62 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Floor canvas size (feet are 10 units each)
+        const size = body.floorSize;
+        if (size && [size.width, size.height].every((n: number) => Number.isFinite(n) && n >= 200 && n <= 20000)) {
+          await tx.floor.update({ where: { id: floorId }, data: { width: size.width, height: size.height } });
+        }
+
+        // Seats: removed, added and moved/re-typed
+        const objectIdOf = (id: string | null) => {
+          if (!id) return null;
+          if (!id.startsWith('temp-')) return id;
+          return created.find((c) => c.tempId === id)?.id ?? null;
+        };
+        if (seatsToDelete.length > 0) {
+          await tx.seat.deleteMany({ where: { floorId, id: { in: seatsToDelete } } });
+        }
+        if (seatsToCreate.length > 0) {
+          const clash = await tx.seat.findMany({
+            where: { seatId: { in: newIds } },
+            select: { seatId: true },
+          });
+          if (clash.length) {
+            throw new Error(`Seat ID ${clash[0].seatId} already exists. Delete or rename the duplicate and save again.`);
+          }
+          const zones = await tx.zone.findMany({ where: { floorId }, select: { id: true } });
+          const zoneIds = new Set(zones.map((z) => z.id));
+          for (const sd of seatsToCreate) {
+            const row = await tx.seat.create({
+              data: {
+                seatId: String(sd.seatId).trim(),
+                floorId,
+                zoneId: sd.zoneId && zoneIds.has(sd.zoneId) ? sd.zoneId : null,
+                floorObjectId: objectIdOf(sd.floorObjectId),
+                bayCode: sd.bayCode || null,
+                seatType: sd.seatType,
+                x: sd.x,
+                y: sd.y,
+                rotation: sd.rotation,
+              },
+            });
+            createdSeats.push({ tempId: sd.id, id: row.id });
+          }
+        }
+        for (const sd of seatsToUpdate) {
+          await tx.seat.updateMany({
+            where: { id: sd.id, floorId },
+            data: {
+              x: sd.x,
+              y: sd.y,
+              rotation: sd.rotation,
+              seatType: sd.seatType,
+              floorObjectId: objectIdOf(sd.floorObjectId),
+              bayCode: sd.bayCode || null,
+            },
+          });
+        }
+
         await tx.auditLog.create({
           data: {
             action: 'BATCH_SAVE_FLOOR_OBJECTS',
@@ -142,17 +214,21 @@ export async function POST(req: NextRequest) {
               objectCount: objects.length,
               created: created.length,
               deleted: deletedCount,
+              seatsAdded: createdSeats.length,
+              seatsUpdated: seatsToUpdate.length,
+              seatsRemoved: seatsToDelete.length,
             }),
             reason: 'Floor layout saved',
             source: 'EDITOR',
           },
         });
-      });
+      }, { timeout: 60000, maxWait: 10000 });
 
       return NextResponse.json({
         success: true,
         count: objects.length,
         created,
+        createdSeats,
         deleted: deletedCount,
       });
     }
